@@ -1,12 +1,14 @@
-# Local development infrastructure for the Anthropic RAG pipeline.
+# Local development stack for the Anthropic RAG pipeline.
 #
-# Scope of this file (M1): the backing services — Qdrant (dense vectors), Redis
-# (docstore + UPSERTS dedup), and a local Ollama daemon serving nomic-embed-text
-# (dense embeddings only; generation goes to remote Ollama Cloud).
+# Backing services: Qdrant (dense vectors), Redis (docstore + UPSERTS dedup), and a
+# local Ollama daemon serving nomic-embed-text (dense embeddings only; generation
+# goes to remote Ollama Cloud). The `app` container runs the pipeline + hourly
+# scheduler + MCP server (entrypoint: seed once, then serve).
 #
-# The `app` container (pipeline + scheduler + MCP server) and its seed entrypoint
-# are wired in M6. During M2-M5 we drive the pipeline from the host via `uv run`
-# against these services.
+# Host ports are remapped (16333/16334, 16379, 11144) so `uv run` from the host
+# against this stack does not clash with other local qdrant/redis/ollama instances.
+# Inside the `app` container the services are reached by compose service name on
+# their standard internal ports (see the `environment:` overrides below).
 #
 # Lift to AWS EC2 for many users: same compose, deltas are env + security group
 # (open the MCP port) + MCP_AUTH_TOKEN only — no pipeline code change.
@@ -62,4 +64,28 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      # Inside the container, reach the backing services by compose service name
+      # on their standard internal ports (overrides the host-side .env defaults).
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379
+      OLLAMA_EMBED_BASE_URL: http://ollama:11434
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8000
+    ports:
+      - "8000:8000"   # MCP Streamable HTTP
+    volumes:
+      - ./data:/app/data   # SQLite watermarks
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
     restart: unless-stopped

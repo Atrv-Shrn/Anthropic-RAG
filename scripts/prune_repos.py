@@ -23,8 +23,6 @@ for _p in (_ROOT, _ROOT / "src"):
 
 
 def main() -> int:
-    from qdrant_client import QdrantClient, models
-
     from config.repos import load_repos
     from config.settings import get_settings
     from rag.corpus.watermarks import DEFAULT_DB, _connect, all_watermarks
@@ -36,30 +34,16 @@ def main() -> int:
     log.info("keep-set: %s", sorted(keep))
 
     ds = get_docstore(s)
-    # Generous timeout: deletes can be slow when the box is under load (e.g. a
-    # concurrent image build), and a filter-delete rewrites segments.
-    c = QdrantClient(url=s.qdrant_url, timeout=300)
+
+    import time
 
     # Which repos are present but not kept?
     present = {(n.metadata or {}).get("repo") for n in ds.docs.values()}
     remove_repos = {r for r in present if r not in keep and r is not None}
     log.info("removing repos: %s", sorted(remove_repos))
 
-    # 1. Delete their vectors from Qdrant (by repo payload).
-    before = c.get_collection(s.qdrant_collection).points_count
-    for repo in remove_repos:
-        c.delete(
-            collection_name=s.qdrant_collection,
-            points_selector=models.FilterSelector(
-                filter=models.Filter(
-                    must=[models.FieldCondition(key="repo", match=models.MatchValue(value=repo))]
-                )
-            ),
-        )
-    after = c.get_collection(s.qdrant_collection).points_count
-    log.info("qdrant points: %d -> %d", before, after)
-
-    # 2. Delete their docs from the Redis docstore.
+    # 1. Delete their docs from the Redis docstore FIRST (reliable; keeps the docstore
+    #    authoritative even if the Qdrant step needs retries).
     victims = [did for did, n in ds.docs.items() if (n.metadata or {}).get("repo") in remove_repos]
     for did in victims:
         try:
@@ -71,6 +55,35 @@ def main() -> int:
         except Exception:  # noqa: BLE001
             pass
     log.info("docstore docs: removed %d, now %d", len(victims), len(ds.docs))
+
+    # 2. Delete their vectors from Qdrant by repo payload. Use the REST API directly
+    #    (httpx) rather than QdrantClient: on Windows the client's connection pool
+    #    intermittently resets ("WinError 10054") on filter-deletes over many points,
+    #    while a plain HTTP POST to the same endpoint is reliable.
+    import httpx
+
+    def _count() -> int:
+        r = httpx.get(f"{s.qdrant_url}/collections/{s.qdrant_collection}", timeout=60)
+        return r.json()["result"]["points_count"]
+
+    before = _count()
+    with httpx.Client(timeout=120) as hc:
+        for repo in sorted(remove_repos):
+            for attempt in range(1, 6):
+                try:
+                    resp = hc.post(
+                        f"{s.qdrant_url}/collections/{s.qdrant_collection}/points/delete",
+                        params={"wait": "true"},
+                        json={"filter": {"must": [{"key": "repo", "match": {"value": repo}}]}},
+                    )
+                    resp.raise_for_status()
+                    log.info("qdrant: deleted %s (%s)", repo, resp.json()["result"]["status"])
+                    break
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("qdrant delete %s attempt %d failed: %s", repo, attempt, exc)
+                    time.sleep(3 * attempt)
+    after = _count()
+    log.info("qdrant points: %d -> %d", before, after)
 
     # 3. Clear watermarks for removed repos.
     conn = _connect(DEFAULT_DB)
@@ -88,7 +101,7 @@ def main() -> int:
 
     final = Counter((n.metadata or {}).get("repo") for n in ds.docs.values())
     log.info("FINAL corpus: qdrant=%d docstore=%d repos=%s",
-             c.get_collection(s.qdrant_collection).points_count, len(ds.docs), dict(final))
+             _count(), len(ds.docs), dict(final))
     log.info("PRUNE DONE")
     return 0
 

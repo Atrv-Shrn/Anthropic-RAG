@@ -13,7 +13,7 @@
 
 services:
   qdrant:
-    image: qdrant/qdrant:v1.12.4
+    image: qdrant/qdrant:v1.18.2
     ports:
       - "16333:6333"   # REST / dashboard (host 16333 to avoid clashing with other local stacks)
       - "16334:6334"   # gRPC

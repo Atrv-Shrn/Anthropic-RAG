@@ -25,7 +25,7 @@ from llama_index.core.schema import Document
 from llama_index.readers.github import GithubClient, GithubRepositoryReader
 
 from config.settings import Settings, get_settings
-from rag.corpus._github_http import paginate
+from rag.corpus._github_http import paginate, resolve_repo
 from rag.corpus.watermarks import get_watermark
 
 # Documentation extensions we ingest. Everything else (source code, configs, etc.)
@@ -54,22 +54,32 @@ def _seed_since() -> str:
 
 
 def fetch_docs(repo: str, org: str | None = None, settings: Settings | None = None) -> list[Document]:
-    """Fetch documentation documents for ``org/repo`` (docs extensions only)."""
+    """Fetch documentation documents for ``org/repo`` (docs extensions only).
+
+    Resolves the repo's canonical owner/name/default-branch first (via
+    ``resolve_repo``), so renamed/transferred repos and ``master``-default repos both
+    load correctly — the LlamaHub client needs the real branch and does not follow
+    GitHub's move-redirect itself.
+    """
     s = settings or get_settings()
     org = org or s.github_org
+    info = resolve_repo(org, repo, settings=s)
     client = GithubClient(github_token=s.github_token or None, verbose=False)
     reader = GithubRepositoryReader(
         github_client=client,
-        owner=org,
-        repo=repo,
+        owner=info.owner,
+        repo=info.name,
         use_parser=False,
         filter_file_extensions=(DOC_EXTENSIONS, GithubRepositoryReader.FilterType.INCLUDE),
         verbose=False,
         fail_on_error=False,
     )
-    docs = reader.load_data(branch="main")
+    docs = reader.load_data(branch=info.default_branch)
     for d in docs:
         d.metadata = d.metadata or {}
+        # Keep the configured org/repo as the attribution key so all streams
+        # (docs/issues/comments) and the watermarks agree, even when the repo has
+        # since been renamed/transferred upstream.
         d.metadata.setdefault("repo", f"{org}/{repo}")
         d.metadata.setdefault("stream", DOCS_STREAM)
         d.metadata.setdefault("source_type", "docs")

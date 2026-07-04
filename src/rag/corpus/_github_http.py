@@ -12,7 +12,7 @@ unauthenticated (60 req/hr — fine for small seed fetches, not for the hourly j
 
 from __future__ import annotations
 
-from typing import Any, Iterator
+from typing import Any, Iterator, NamedTuple
 
 import httpx
 
@@ -32,6 +32,40 @@ def _headers(settings: Settings | None = None) -> dict[str, str]:
     if s.github_token:
         headers["Authorization"] = f"Bearer {s.github_token}"
     return headers
+
+
+class RepoInfo(NamedTuple):
+    """Canonical repo coordinates resolved from the GitHub API."""
+
+    owner: str
+    name: str
+    default_branch: str
+
+
+def resolve_repo(
+    owner: str, repo: str, settings: Settings | None = None
+) -> RepoInfo:
+    """Resolve ``owner/repo`` to its canonical owner, name, and default branch.
+
+    Hitting ``/repos/{owner}/{repo}`` with ``follow_redirects=True`` transparently
+    follows GitHub's 301 for renamed/transferred repos (e.g. ``anthropics/dxt`` ->
+    ``modelcontextprotocol/mcpb``) and returns the real ``default_branch`` (some repos
+    use ``master``, not ``main``). This is what lets the docs reader target the right
+    branch — the LlamaHub client does not follow the move-redirect itself, so calling
+    it with a stale owner/branch fails to parse GitHub's 301 body.
+    """
+    s = settings or get_settings()
+    with httpx.Client(
+        headers=_headers(s), timeout=DEFAULT_TIMEOUT, follow_redirects=True
+    ) as client:
+        resp = client.get(f"{GITHUB_API}/repos/{owner}/{repo}")
+        resp.raise_for_status()
+        j = resp.json()
+    return RepoInfo(
+        owner=j.get("owner", {}).get("login", owner),
+        name=j.get("name", repo),
+        default_branch=j.get("default_branch") or "main",
+    )
 
 
 def paginate(

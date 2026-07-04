@@ -28,7 +28,9 @@ class Settings(BaseSettings):
     github_org: str = Field(default="anthropics", description="GitHub organization to ingest.")
 
     # ---- Local Ollama embeddings (dense, nomic) ----
-    ollama_embed_base_url: str = Field(default="http://localhost:11434")
+    # Host port 11144 (remapped in docker-compose.yml to avoid clashing with other
+    # local Ollama instances on 11434).
+    ollama_embed_base_url: str = Field(default="http://localhost:11144")
     embed_model: str = Field(default="nomic-embed-text")
 
     # ---- Ollama Cloud: generation + RAGAS judge ----
@@ -37,9 +39,10 @@ class Settings(BaseSettings):
     gen_model: str = Field(default="deepseek-v4-pro:cloud")
 
     # ---- Stores ----
-    qdrant_url: str = Field(default="http://localhost:6333")
+    # Host ports 16333 / 16379 (remapped in docker-compose.yml).
+    qdrant_url: str = Field(default="http://localhost:16333")
     qdrant_collection: str = Field(default="anthropic_rag")
-    redis_url: str = Field(default="redis://localhost:6379")
+    redis_url: str = Field(default="redis://localhost:16379")
 
     # ---- MCP server ----
     mcp_host: str = Field(default="0.0.0.0")

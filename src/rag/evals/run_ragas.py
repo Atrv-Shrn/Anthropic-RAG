@@ -148,19 +148,34 @@ def run_ragas(
         ContextPrecision(llm=evaluator_llm),
         ContextRecall(llm=evaluator_llm),
     ]
-    metric_names = [type(m).__name__ for m in metrics]
+    # RAGAS keys its result dataframe columns by each metric's `.name` (snake_case,
+    # e.g. "faithfulness"), NOT the class name. Read the columns by `.name` — using the
+    # class name silently misses every column and zeros out all LLM metrics.
+    metric_names = [m.name for m in metrics]
 
     dataset = _build_dataset(records)
     log.info("RAGAS dataset: %d samples (of %d records)", len(dataset), len(records))
 
     ragas_result = evaluate(dataset=dataset, metrics=metrics)
     df = ragas_result.to_pandas()
+    missing = [n for n in metric_names if n not in df.columns]
+    if missing:
+        log.warning("RAGAS df missing expected metric columns %s; have %s",
+                    missing, list(df.columns))
 
-    # RAGAS score columns are keyed by metric name. Map them back to our records by row
-    # order (RAGAS preserves the input sample order and we skipped only errored records).
-    ragas_scores: list[dict[str, float]] = []
+    # Map RAGAS scores back to records by row order (RAGAS preserves input sample order;
+    # we only skipped records that errored at retrieval). Preserve NaN as None rather
+    # than coercing to 0.0 — a real judge failure must not masquerade as a zero score.
+    def _num(v: Any) -> float | None:
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return None
+        return None if f != f else f  # drop NaN
+
+    ragas_scores: list[dict[str, float | None]] = []
     for _, row in df.iterrows():
-        ragas_scores.append({name: float(row.get(name, 0.0) or 0.0) for name in metric_names})
+        ragas_scores.append({name: _num(row.get(name)) for name in metric_names})
 
     # Layer non-LLM scores per record and assemble the full per-item breakdown.
     per_item: list[dict[str, Any]] = []

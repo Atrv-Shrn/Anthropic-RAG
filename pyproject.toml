@@ -27,7 +27,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-evals = ["ragas>=0.2"]
+# nest-asyncio: the native LlamaIndex evaluators call asyncio_run inside a sync method,
+# which needs a re-entrant loop when run alongside RAGAS / any active event loop.
+evals = ["ragas>=0.2", "nest-asyncio>=1.6"]
 dev = ["pytest>=8", "ruff>=0.8"]
 
 [build-system]

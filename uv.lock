@@ -155,6 +155,7 @@ dev = [
     { name = "ruff" },
 ]
 evals = [
+    { name = "nest-asyncio" },
     { name = "ragas" },
 ]
 
@@ -171,6 +172,7 @@ requires-dist = [
     { name = "llama-index-retrievers-bm25", specifier = ">=0.5" },
     { name = "llama-index-storage-docstore-redis", specifier = ">=0.4" },
     { name = "llama-index-vector-stores-qdrant", specifier = ">=0.6" },
+    { name = "nest-asyncio", marker = "extra == 'evals'", specifier = ">=1.6" },
     { name = "pydantic-settings", specifier = ">=2.6" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "pyyaml", specifier = ">=6.0" },

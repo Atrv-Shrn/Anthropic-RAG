@@ -55,6 +55,17 @@ def run_native_evals(
 
     from rag.generate.llm import get_llm
 
+    # The native evaluators' synchronous .evaluate() calls asyncio_run internally, which
+    # raises "Detected nested async" if an event loop is already running in the process
+    # (e.g. when this runs in the same process right after RAGAS, or under any live loop).
+    # nest_asyncio patches the loop to allow the nested run. Harmless if no loop is active.
+    try:
+        import nest_asyncio
+
+        nest_asyncio.apply()
+    except Exception:  # noqa: BLE001 - best effort; only needed under a running loop
+        pass
+
     s = settings or get_settings()
     if records is None:
         records = collect_predictions(settings=s)

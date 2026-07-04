@@ -1,0 +1,1 @@
+"""Configuration package: env-driven settings + repo list + prompt templates."""

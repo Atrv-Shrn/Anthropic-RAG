@@ -1,0 +1,14 @@
+# Curated set of top Anthropic repositories to ingest.
+# Scope: docs + issues/PRs/comments only — NOT source code (see docs/SPEC.md).
+# Edit this list freely; the pipeline reads it at ingest time.
+org: anthropics
+repos:
+  - anthropic-sdk-python
+  - anthropic-sdk-typescript
+  - claude-code
+  - anthropic-cookbook
+  - courses
+  - prompt-eng-interactive-tutorial
+  - anthropic-quickstarts
+  - skills
+  - dxt

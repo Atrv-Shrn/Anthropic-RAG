@@ -6,7 +6,11 @@
       "query": "How do I stream a response with the Anthropic Python SDK?",
       "reference": "Use client.messages.stream(...) (or messages.create(..., stream=True)); iterate the returned stream to consume events, and call stream.get_final_message() to obtain the fully assembled Message once streaming completes.",
       "repo": "anthropic-sdk-python",
-      "tags": ["sdk", "python", "streaming"],
+      "tags": [
+        "sdk",
+        "python",
+        "streaming"
+      ],
       "negative": false
     },
     {
@@ -14,7 +18,11 @@
       "query": "How do I define a tool the model can call with the Python SDK?",
       "reference": "Pass a tool schema to the tools argument of client.messages.create, either as a dict matching the tool-use input_schema or via the @client.tools.use decorator / function-based tool helper; the model returns a tool_use block whose input you execute, then you return a tool_result in a follow-up user message.",
       "repo": "anthropic-sdk-python",
-      "tags": ["sdk", "python", "tool-use"],
+      "tags": [
+        "sdk",
+        "python",
+        "tool-use"
+      ],
       "negative": false
     },
     {
@@ -22,7 +30,11 @@
       "query": "How is the system prompt passed in the Python SDK?",
       "reference": "The system prompt is a top-level parameter on client.messages.create (system=...), separate from the user/assistant turns in the messages list, and may be a string or a list of structured content blocks.",
       "repo": "anthropic-sdk-python",
-      "tags": ["sdk", "python", "system-prompt"],
+      "tags": [
+        "sdk",
+        "python",
+        "system-prompt"
+      ],
       "negative": false
     },
     {
@@ -30,7 +42,11 @@
       "query": "Is max_tokens required when creating a message with the Python SDK?",
       "reference": "Yes, max_tokens is a required parameter on messages.create; it caps the output length and must be set for every request.",
       "repo": "anthropic-sdk-python",
-      "tags": ["sdk", "python", "api"],
+      "tags": [
+        "sdk",
+        "python",
+        "api"
+      ],
       "negative": false
     },
     {
@@ -38,7 +54,11 @@
       "query": "How do I send an image to Claude with the Python SDK?",
       "reference": "Include an image content block in a user message: {'type': 'image', 'source': {'type': 'base64', 'media_type': 'image/png', 'data': '<base64>'}} (or a URL source). The messages list then contains that block alongside any text blocks.",
       "repo": "anthropic-sdk-python",
-      "tags": ["sdk", "python", "vision"],
+      "tags": [
+        "sdk",
+        "python",
+        "vision"
+      ],
       "negative": false
     },
     {
@@ -46,7 +66,11 @@
       "query": "How does the Python SDK authenticate?",
       "reference": "The SDK reads the ANTHROPIC_API_KEY environment variable by default; you can also pass api_key= to the Anthropic() client constructor. An auth header is sent on each request.",
       "repo": "anthropic-sdk-python",
-      "tags": ["sdk", "python", "auth"],
+      "tags": [
+        "sdk",
+        "python",
+        "auth"
+      ],
       "negative": false
     },
     {
@@ -54,7 +78,11 @@
       "query": "How do I count tokens for a prompt before sending it with the Python SDK?",
       "reference": "Call client.messages.count_tokens(...), passing model, system, and messages; it returns the input token count without making a completion request.",
       "repo": "anthropic-sdk-python",
-      "tags": ["sdk", "python", "tokens"],
+      "tags": [
+        "sdk",
+        "python",
+        "tokens"
+      ],
       "negative": false
     },
     {
@@ -62,7 +90,11 @@
       "query": "How do I stream a response with the Anthropic TypeScript SDK?",
       "reference": "Use client.messages.stream(...) which returns a stream helper with event handlers (on('text', ...), on('message', ...)) and a finalMessage() promise; or messages.create(..., stream: true) to iterate raw MessageStreamEvent chunks.",
       "repo": "anthropic-sdk-typescript",
-      "tags": ["sdk", "typescript", "streaming"],
+      "tags": [
+        "sdk",
+        "typescript",
+        "streaming"
+      ],
       "negative": false
     },
     {
@@ -70,7 +102,11 @@
       "query": "How do I handle tool use in the TypeScript SDK?",
       "reference": "Define tools with an input_schema (or zod schema via client.tools), pass them to messages.create; when a stop_reason of 'tool_use' returns, execute the tool_use blocks' inputs and reply with a user message containing tool_result blocks.",
       "repo": "anthropic-sdk-typescript",
-      "tags": ["sdk", "typescript", "tool-use"],
+      "tags": [
+        "sdk",
+        "typescript",
+        "tool-use"
+      ],
       "negative": false
     },
     {
@@ -78,7 +114,11 @@
       "query": "How do I construct the Anthropic client in TypeScript?",
       "reference": "import Anthropic from '@anthropic-ai/sdk'; const client = new Anthropic(); it reads ANTHROPIC_API_KEY from the environment, or pass apiKey/baseURL to the constructor.",
       "repo": "anthropic-sdk-typescript",
-      "tags": ["sdk", "typescript", "init"],
+      "tags": [
+        "sdk",
+        "typescript",
+        "init"
+      ],
       "negative": false
     },
     {
@@ -86,263 +126,11 @@
       "query": "Where does the system prompt go in the TypeScript SDK?",
       "reference": "system is a top-level argument on client.messages.create, separate from the messages array; it can be a string or an array of text blocks.",
       "repo": "anthropic-sdk-typescript",
-      "tags": ["sdk", "typescript", "system-prompt"],
-      "negative": false
-    },
-    {
-      "id": "claude-code-overview-001",
-      "query": "What is Claude Code?",
-      "reference": "Claude Code is Anthropic's agentic command-line coding tool that runs in the terminal, understands a codebase, and can edit files, run commands, and answer questions about the repo. It is also available as a desktop app and IDE extensions and via the Claude Agent SDK.",
-      "repo": "claude-code",
-      "tags": ["claude-code", "overview"],
-      "negative": false
-    },
-    {
-      "id": "claude-code-permissions-001",
-      "query": "How does Claude Code handle permissions for tools like Bash or file edits?",
-      "reference": "Claude Code operates under permission modes that gate tool execution; edits and Bash commands require user approval unless run in a mode like acceptEdits or a pre-approved sandbox. Permissions can be persisted in settings so approvals are remembered.",
-      "repo": "claude-code",
-      "tags": ["claude-code", "permissions", "security"],
-      "negative": false
-    },
-    {
-      "id": "claude-code-mcp-001",
-      "query": "Can Claude Code use MCP servers?",
-      "reference": "Yes. Claude Code can connect to MCP servers (stdio or HTTP) configured in .mcp.json or via the claude mcp add command; their tools/resources become available to Claude within the session.",
-      "repo": "claude-code",
-      "tags": ["claude-code", "mcp"],
-      "negative": false
-    },
-    {
-      "id": "claude-code-memory-001",
-      "query": "How do I give Claude Code persistent project context?",
-      "reference": "Use CLAUDE.md files (project memory loaded into context each session) and the /memory command; user/project level memories are stored under the Claude config directory and surfaced as system reminders.",
-      "repo": "claude-code",
-      "tags": ["claude-code", "memory"],
-      "negative": false
-    },
-    {
-      "id": "claude-code-sdk-001",
-      "query": "What is the Claude Agent SDK?",
-      "reference": "The Claude Agent SDK lets developers build custom agent applications on top of Claude Code's runtime (tools, permissions, session management) programmatically, embedding agentic coding capabilities in other apps and CI workflows.",
-      "repo": "claude-code",
-      "tags": ["claude-code", "sdk", "agents"],
-      "negative": false
-    },
-    {
-      "id": "claude-code-hooks-001",
-      "query": "What are hooks in Claude Code?",
-      "reference": "Hooks are user-defined shell commands that run automatically at specific lifecycle events (e.g. before/after tool execution, on session start); they let you enforce policy, run linters/tests, or block tool actions.",
-      "repo": "claude-code",
-      "tags": ["claude-code", "hooks"],
-      "negative": false
-    },
-    {
-      "id": "cookbook-tooluse-001",
-      "query": "Show a basic tool use example from the Anthropic cookbook.",
-      "reference": "The cookbook's tool use examples define a tool spec (e.g. get_weather with a location parameter), pass it to messages.create, then when the model returns a tool_use block, execute the function and send back a tool_result block to continue the conversation.",
-      "repo": "anthropic-cookbook",
-      "tags": ["cookbook", "tool-use", "example"],
-      "negative": false
-    },
-    {
-      "id": "cookbook-rag-001",
-      "query": "Does the cookbook have a RAG example?",
-      "reference": "Yes, the cookbook includes retrieval-augmented generation examples that embed a document corpus, retrieve relevant chunks for a query, and feed them as context to Claude to answer grounded questions.",
-      "repo": "anthropic-cookbook",
-      "tags": ["cookbook", "rag", "example"],
-      "negative": false
-    },
-    {
-      "id": "cookbook-prompting-001",
-      "query": "What prompting techniques does the cookbook demonstrate?",
-      "reference": "The cookbook demonstrates techniques like few-shot prompting, chain-of-thought, role prompting, XML-tagged sections, and prompt chaining/ routing across multiple calls.",
-      "repo": "anthropic-cookbook",
-      "tags": ["cookbook", "prompting"],
-      "negative": false
-    },
-    {
-      "id": "cookbook-multimodal-001",
-      "query": "How does the cookbook send images to Claude?",
-      "reference": "Multimodal cookbook examples embed an image as a base64 source block (or URL) inside a user message's content list, alongside text, then call messages.create normally.",
-      "repo": "anthropic-cookbook",
-      "tags": ["cookbook", "vision", "example"],
-      "negative": false
-    },
-    {
-      "id": "cookbook-classification-001",
-      "query": "How do I do classification with Claude per the cookbook?",
-      "reference": "The cookbook shows classification by asking the model to output a label (often constrained via the response format or by instructing it to emit only the label) and using a clear system prompt with examples; results can be parsed from the text response.",
-      "repo": "anthropic-cookbook",
-      "tags": ["cookbook", "classification", "example"],
-      "negative": false
-    },
-    {
-      "id": "prompt-eng-chain-001",
-      "query": "What is chain-of-thought prompting and when should I use it?",
-      "reference": "Chain-of-thought prompting asks the model to reason step by step before answering (e.g. 'Think step by step'). It improves performance on multi-step reasoning tasks where the answer depends on intermediate steps; it is unnecessary for simple retrieval or single-step tasks.",
-      "repo": "prompt-eng-interactive-tutorial",
-      "tags": ["prompt-eng", "chain-of-thought"],
-      "negative": false
-    },
-    {
-      "id": "prompt-eng-roles-001",
-      "query": "How do role prompts affect Claude's behavior?",
-      "reference": "Assigning a role in the system prompt (e.g. 'You are an expert data scientist') steers Claude's tone, vocabulary, and the perspective it reasons from, which can improve quality for domain-specific tasks.",
-      "repo": "prompt-eng-interactive-tutorial",
-      "tags": ["prompt-eng", "roles"],
-      "negative": false
-    },
-    {
-      "id": "prompt-eng-xml-001",
-      "query": "Why use XML tags in prompts for Claude?",
-      "reference": "Claude responds well to XML tags (e.g. <context>...</context>, <instructions>...) to clearly separate sections of a prompt; tags reduce ambiguity, help the model attend to the right part, and make outputs easier to parse when you ask for tagged output.",
-      "repo": "prompt-eng-interactive-tutorial",
-      "tags": ["prompt-eng", "xml"],
-      "negative": false
-    },
-    {
-      "id": "prompt-eng-fewshot-001",
-      "query": "How do few-shot examples improve a prompt?",
-      "reference": "Few-shot examples place sample input/output pairs in the prompt to demonstrate the desired format, style, or reasoning; Claude pattern-matches the examples, which improves consistency especially for formatting or classification tasks.",
-      "repo": "prompt-eng-interactive-tutorial",
-      "tags": ["prompt-eng", "few-shot"],
-      "negative": false
-    },
-    {
-      "id": "prompt-eng-prefill-001",
-      "query": "What is prefilling the assistant response and why is it useful?",
-      "reference": "Prefilling means starting the assistant's turn with text (e.g. '{' to force JSON). It steers the format and content of the output; it is useful for forcing specific output formats like JSON or XML, though it must be used carefully to avoid biasing content.",
-      "repo": "prompt-eng-interactive-tutorial",
-      "tags": ["prompt-eng", "prefill"],
-      "negative": false
-    },
-    {
-      "id": "prompt-eng-clarity-001",
-      "query": "How should I structure a complex prompt for Claude?",
-      "reference": "Use clear sections: a role, the task, relevant context/data, constraints, and the desired output format; XML tags or headers separate sections, and being explicit and specific reduces ambiguity. Lead with the most important instructions.",
-      "repo": "prompt-eng-interactive-tutorial",
-      "tags": ["prompt-eng", "structure"],
-      "negative": false
-    },
-    {
-      "id": "courses-overview-001",
-      "query": "What do the Anthropic courses cover?",
-      "reference": "The courses repo provides hands-on notebooks teaching prompting, tool use, retrieval (RAG), and building agentic applications with Claude, progressing from basics to advanced patterns.",
-      "repo": "courses",
-      "tags": ["courses", "overview"],
-      "negative": false
-    },
-    {
-      "id": "courses-tooluse-001",
-      "query": "What does the tool use course teach?",
-      "reference": "The tool use course teaches defining tools with input schemas, having Claude decide to call them, executing the calls, and returning tool results to continue the conversation, building up to multi-tool and agentic loops.",
-      "repo": "courses",
-      "tags": ["courses", "tool-use"],
-      "negative": false
-    },
-    {
-      "id": "courses-rag-001",
-      "query": "What does the RAG course teach?",
-      "reference": "The retrieval-augmented generation course teaches embedding documents, chunking, vector search, retrieving relevant context for a query, and feeding it to Claude, including evaluation of retrieval quality.",
-      "repo": "courses",
-      "tags": ["courses", "rag"],
-      "negative": false
-    },
-    {
-      "id": "quickstarts-overview-001",
-      "query": "What is the anthropic-quickstarts repo for?",
-      "reference": "anthropic-quickstarts provides minimal, ready-to-run starter apps and integrations (e.g. framework quickstarts) that show how to build with the Anthropic API and SDKs from scratch, intended as templates to copy.",
-      "repo": "anthropic-quickstarts",
-      "tags": ["quickstarts", "overview"],
-      "negative": false
-    },
-    {
-      "id": "quickstarts-amazonbedrock-001",
-      "query": "Is there a quickstart for Amazon Bedrock?",
-      "reference": "Yes, anthropic-quickstarts includes a bedrock quickstart that uses the Anthropic SDK configured for the Amazon Bedrock platform (base_url + auth) to call Claude on Bedrock.",
-      "repo": "anthropic-quickstarts",
-      "tags": ["quickstarts", "bedrock"],
-      "negative": false
-    },
-    {
-      "id": "skills-overview-001",
-      "query": "What are Anthropic skills?",
-      "reference": "Skills are reusable, model-loaded capability packages (a SKILL.md plus supporting files/scripts) that Claude can invoke to perform specialized tasks; they let Claude Code/agents access bounded, on-demand expertise without bloating the base context.",
-      "repo": "skills",
-      "tags": ["skills", "overview"],
-      "negative": false
-    },
-    {
-      "id": "skills-structure-001",
-      "query": "How is a skill structured?",
-      "reference": "A skill lives in a directory with a SKILL.md (frontmatter describing the skill plus instructions) and optional supporting assets like scripts or reference files; the model reads SKILL.md on demand and follows its instructions to complete the task.",
-      "repo": "skills",
-      "tags": ["skills", "structure"],
-      "negative": false
-    },
-    {
-      "id": "skills-invocation-001",
-      "query": "How does Claude decide to use a skill?",
-      "reference": "Claude loads a skill's metadata (from SKILL.md frontmatter) to recognize when it is relevant to the user's request, then reads the skill's full instructions on demand and executes the described steps, invoking bundled scripts as needed.",
-      "repo": "skills",
-      "tags": ["skills", "invocation"],
-      "negative": false
-    },
-    {
-      "id": "dxt-overview-001",
-      "query": "What is a Claude Desktop Extension (DXT)?",
-      "reference": "A Claude Desktop Extension (.dxt) is a packaged bundle that adds tools, resources, or prompts to Claude Desktop via the Model Context Protocol; it ships an MCP server plus a manifest so users can install integrations without manual server configuration.",
-      "repo": "dxt",
-      "tags": ["dxt", "overview", "mcp"],
-      "negative": false
-    },
-    {
-      "id": "dxt-manifest-001",
-      "query": "What does a DXT manifest contain?",
-      "reference": "The manifest.json in a .dxt package declares the extension's metadata (name, version, description, author), the MCP server command and args to launch it, and permissions/config schema so Claude Desktop knows how to run and configure the extension.",
-      "repo": "dxt",
-      "tags": ["dxt", "manifest"],
-      "negative": false
-    },
-    {
-      "id": "dxt-mcp-001",
-      "query": "How does a DXT relate to MCP?",
-      "reference": "A DXT wraps an MCP server: the extension's server implements the Model Context Protocol (tools/resources/prompts) and the .dxt packaging lets Claude Desktop discover, install, and launch that server with the right config and permissions.",
-      "repo": "dxt",
-      "tags": ["dxt", "mcp"],
-      "negative": false
-    },
-    {
-      "id": "dxt-packaging-001",
-      "query": "How do I package a DXT for distribution?",
-      "reference": "Bundle the MCP server code and manifest.json into a .dxt archive (a zip with the .dxt extension) using the provided CLI/packaging tool, then distribute it so users can install it into Claude Desktop.",
-      "repo": "dxt",
-      "tags": ["dxt", "packaging"],
-      "negative": false
-    },
-    {
-      "id": "general-mcp-001",
-      "query": "What is the Model Context Protocol (MCP)?",
-      "reference": "MCP is an open standard for connecting AI applications to external tools, resources, and data sources via a client-server protocol; servers expose tools/resources/prompts and clients (like Claude Desktop or Claude Code) invoke them so models can act on external systems.",
-      "repo": "claude-code",
-      "tags": ["mcp", "overview"],
-      "negative": false
-    },
-    {
-      "id": "general-contextwindow-001",
-      "query": "How should I handle long context with Claude?",
-      "reference": "Place the most important instructions and context at the start (and end) of the prompt, since Claude attends well to those positions; for large corpora, retrieve and include only the most relevant chunks rather than dumping everything, and structure sections with tags.",
-      "repo": "prompt-eng-interactive-tutorial",
-      "tags": ["prompt-eng", "context"],
-      "negative": false
-    },
-    {
-      "id": "general-safety-001",
-      "query": "What is Constitutional AI?",
-      "reference": "Constitutional AI is an approach to training models to be helpful and harmless by having an AI evaluate and revise its own outputs against a set of principles (a 'constitution'), reducing reliance on human feedback for alignment.",
-      "repo": "anthropic-cookbook",
-      "tags": ["safety", "alignment"],
+      "tags": [
+        "sdk",
+        "typescript",
+        "system-prompt"
+      ],
       "negative": false
     },
     {
@@ -350,7 +138,11 @@
       "query": "Where can I find Claude model context window and pricing details?",
       "reference": "Model context windows, max output, and pricing are documented on Anthropic's models and pricing documentation pages; the SDKs also expose model metadata. Check the official docs for current per-model input/output token pricing.",
       "repo": "anthropic-sdk-python",
-      "tags": ["models", "pricing", "docs"],
+      "tags": [
+        "models",
+        "pricing",
+        "docs"
+      ],
       "negative": false
     },
     {
@@ -358,7 +150,11 @@
       "query": "What kinds of events appear when streaming a message?",
       "reference": "A message stream emits events like message_start, content_block_start, content_block_delta (text or tool_use input deltas), content_block_stop, and message_stop, plus a final usage/delta; clients reconstruct the full content and tool inputs from the deltas.",
       "repo": "anthropic-sdk-typescript",
-      "tags": ["sdk", "streaming", "events"],
+      "tags": [
+        "sdk",
+        "streaming",
+        "events"
+      ],
       "negative": false
     },
     {
@@ -366,7 +162,10 @@
       "query": "What is the capital of France?",
       "reference": "This question is not answerable from the Anthropic GitHub corpus; the system should respond that it has no information about it rather than grounding an answer in the repos.",
       "repo": null,
-      "tags": ["out-of-scope", "geography"],
+      "tags": [
+        "out-of-scope",
+        "geography"
+      ],
       "negative": true
     },
     {
@@ -374,7 +173,10 @@
       "query": "What is the source code of the llama_index IngestionPipeline class?",
       "reference": "Source code is intentionally not ingested into the corpus (only docs, issues, PRs, and comments), so the system should not be able to return the implementation of an arbitrary third-party class from the Anthropic repos.",
       "repo": null,
-      "tags": ["out-of-scope", "source-code"],
+      "tags": [
+        "out-of-scope",
+        "source-code"
+      ],
       "negative": true
     },
     {
@@ -382,7 +184,10 @@
       "query": "Give me the raw bytes of the bge-reranker model weights.",
       "reference": "Model weights are binary artifacts not present in the docs/issues corpus; the system should decline rather than fabricate them.",
       "repo": null,
-      "tags": ["out-of-scope", "binary"],
+      "tags": [
+        "out-of-scope",
+        "binary"
+      ],
       "negative": true
     },
     {
@@ -390,7 +195,10 @@
       "query": "How do I file my taxes in the United States?",
       "reference": "Tax advice is unrelated to the Anthropic GitHub organization and not present in the corpus; the system should say it has no information about it.",
       "repo": null,
-      "tags": ["out-of-scope", "finance"],
+      "tags": [
+        "out-of-scope",
+        "finance"
+      ],
       "negative": true
     },
     {
@@ -398,7 +206,10 @@
       "query": "What is the implementation of QdrantVectorStore in this pipeline's source?",
       "reference": "The pipeline's own internal source code is not part of the ingested corpus (docs/issues/comments only), so the system should not return implementation details of internal modules.",
       "repo": null,
-      "tags": ["out-of-scope", "internal-source"],
+      "tags": [
+        "out-of-scope",
+        "internal-source"
+      ],
       "negative": true
     },
     {
@@ -406,7 +217,10 @@
       "query": "Recommend a recipe for chocolate cake.",
       "reference": "Cooking recipes are outside the Anthropic GitHub scope; the system should decline to answer from the corpus.",
       "repo": null,
-      "tags": ["out-of-scope", "cooking"],
+      "tags": [
+        "out-of-scope",
+        "cooking"
+      ],
       "negative": true
     },
     {
@@ -414,7 +228,10 @@
       "query": "What is OpenAI's GPT-4 pricing?",
       "reference": "Competitor model pricing is not part of the Anthropic corpus; the system should not provide it as grounded information from these repos.",
       "repo": null,
-      "tags": ["out-of-scope", "competitor"],
+      "tags": [
+        "out-of-scope",
+        "competitor"
+      ],
       "negative": true
     },
     {
@@ -422,7 +239,10 @@
       "query": "Write a full Kubernetes deployment manifest for my company's services.",
       "reference": "This is a generic infra request unrelated to the Anthropic repos; without repo-specific grounding the system should not present a tailored deployment as if sourced from the corpus.",
       "repo": null,
-      "tags": ["out-of-scope", "infra"],
+      "tags": [
+        "out-of-scope",
+        "infra"
+      ],
       "negative": true
     }
   ]

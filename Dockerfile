@@ -22,6 +22,12 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
+# Pre-download the bge cross-encoder reranker into the image's HF cache so the first
+# answer() call after a container start doesn't pay a one-time HuggingFace download
+# (observed to stall the first request otherwise). HF_HOME fixes the cache location.
+ENV HF_HOME=/app/.hf_cache
+RUN uv run --no-project python -c "from sentence_transformers import CrossEncoder; CrossEncoder('BAAI/bge-reranker-base')"
+
 # Copy the package + config (secrets come from env at runtime, never baked in).
 COPY src ./src
 COPY config ./config

@@ -13,6 +13,10 @@ dependencies = [
     "llama-index-storage-docstore-redis>=0.4",
     "llama-index-postprocessor-sbert-rerank>=0.4",
     "llama-index-retrievers-bm25>=0.5",
+    # The bge cross-encoder reranker (SentenceTransformerRerank) needs these heavy
+    # deps, which the sbert-rerank package does not bundle.
+    "sentence-transformers>=3.0",
+    "torch>=2.2",
     "qdrant-client>=1.18,<2.0",  # keep aligned with the qdrant server image in docker-compose.yml
     "redis>=5.2",
     "apscheduler>=3.11",

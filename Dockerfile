@@ -28,6 +28,13 @@ RUN uv sync --frozen --no-dev --no-install-project
 ENV HF_HOME=/app/.hf_cache
 RUN uv run --no-project python -c "from sentence_transformers import CrossEncoder; CrossEncoder('BAAI/bge-reranker-base')"
 
+# Load the reranker purely from the baked cache at runtime. Without offline mode
+# sentence-transformers still makes HF metadata HEAD/GET calls on every load (checking
+# for updates), which added ~90s of latency to the first query on a slow connection.
+# The weights are already in the image, so offline is both correct and much faster.
+ENV HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1
+
 # Copy the package + config (secrets come from env at runtime, never baked in).
 COPY src ./src
 COPY config ./config

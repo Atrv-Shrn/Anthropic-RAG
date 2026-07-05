@@ -18,7 +18,7 @@ import re
 from llama_index.core.schema import Document
 
 from config.settings import Settings, get_settings
-from rag.corpus._github_http import paginate
+from rag.corpus._github_http import paginate, resolve_repo
 from rag.corpus.github_source import _seed_since
 from rag.corpus.watermarks import get_watermark
 
@@ -53,12 +53,17 @@ def fetch_review_comments(
     if since is None:
         since = get_watermark(repo, COMMENTS_STREAM) or _seed_since()
 
+    # Resolve canonical owner/name so the request URLs don't 301 (a redirect on a
+    # renamed/transferred repo drops the ?since= query string, breaking windowing).
+    # Attribution keeps the configured org/repo.
+    info = resolve_repo(org, repo, settings=s)
+    owner, name = info.owner, info.name
     full = f"{org}/{repo}"
     docs: list[Document] = []
 
     # Issue-level comments (cover both issues and PRs).
     for item in paginate(
-        f"/repos/{org}/{repo}/issues/comments",
+        f"/repos/{owner}/{name}/issues/comments",
         params={"sort": "created", "direction": "desc", "since": since},
         settings=s,
     ):
@@ -74,7 +79,7 @@ def fetch_review_comments(
 
     # PR review / inline comments.
     for item in paginate(
-        f"/repos/{org}/{repo}/pulls/comments",
+        f"/repos/{owner}/{name}/pulls/comments",
         params={"sort": "created", "direction": "desc", "since": since},
         settings=s,
     ):

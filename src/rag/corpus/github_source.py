@@ -19,7 +19,6 @@ the corpus. Two fetchers:
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from llama_index.core.schema import Document
 from llama_index.readers.github import GithubClient, GithubRepositoryReader
@@ -102,7 +101,11 @@ def fetch_issues_prs(
     if since is None:
         since = get_watermark(repo, ISSUES_PRS_STREAM) or _seed_since()
 
-    path = f"/repos/{org}/{repo}/issues"
+    # Resolve the canonical owner/name so the request URL doesn't 301 (a redirect
+    # on a renamed/transferred repo drops the query string — state/since/sort — so
+    # windowing would silently break). Attribution still uses the configured org/repo.
+    info = resolve_repo(org, repo, settings=s)
+    path = f"/repos/{info.owner}/{info.name}/issues"
     params = {"state": "all", "sort": "updated", "direction": "desc", "since": since}
 
     docs: list[Document] = []

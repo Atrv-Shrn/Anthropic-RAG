@@ -68,6 +68,35 @@ def test_resolve_repo_follows_move_and_reads_default_branch(monkeypatch):
     assert captured["follow_redirects"] is True  # must follow the 301
 
 
+def test_resolve_repo_survives_null_owner(monkeypatch):
+    # A present-but-null "owner" must fall back to the passed-in owner, not crash.
+    class _Resp:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"owner": None, "name": None, "default_branch": None}
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get(self, url):
+            return _Resp()
+
+    monkeypatch.setattr(gh.httpx, "Client", _Client)
+    info = gh.resolve_repo("anthropics", "dxt", settings=_settings())
+    assert info.owner == "anthropics"
+    assert info.name == "dxt"
+    assert info.default_branch == "main"
+
+
 def test_resolve_repo_defaults_branch_to_main_when_missing(monkeypatch):
     class _Resp:
         def raise_for_status(self):

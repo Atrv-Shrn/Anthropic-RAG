@@ -61,9 +61,10 @@ def resolve_repo(
         resp = client.get(f"{GITHUB_API}/repos/{owner}/{repo}")
         resp.raise_for_status()
         j = resp.json()
+    owner_obj = j.get("owner") or {}
     return RepoInfo(
-        owner=j.get("owner", {}).get("login", owner),
-        name=j.get("name", repo),
+        owner=owner_obj.get("login") or owner,
+        name=j.get("name") or repo,
         default_branch=j.get("default_branch") or "main",
     )
 

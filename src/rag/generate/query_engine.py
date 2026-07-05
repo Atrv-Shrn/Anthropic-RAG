@@ -19,7 +19,9 @@ from rag.generate.llm import get_llm
 from rag.retrieve.rerank import build_reranker
 from rag.retrieve.retriever import build_retriever
 
-TEMPLATES_DIR = Path("config/templates")
+# Anchor to the repo root (src/rag/generate/query_engine.py -> parents[3]) so the QA
+# template loads regardless of the process CWD (e.g. `python -m rag serve` from /).
+TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "config" / "templates"
 
 
 def load_qa_template(template_name: str = "default_qa") -> PromptTemplate:

@@ -26,6 +26,14 @@ def _job() -> None:
     try:
         stats = run_incremental_ingest()
         log.info("hourly ingest complete: %s", stats)
+        # Drop the server's cached query engine so the next answer() rebuilds BM25
+        # over the freshly-ingested docs (the lexical arm is a build-time snapshot).
+        try:
+            from rag.server.mcp_server import invalidate_query_engine
+
+            invalidate_query_engine()
+        except Exception:  # noqa: BLE001 - server module may not be loaded (seed-only runs)
+            pass
     except Exception:
         log.exception("hourly ingest job failed")
 

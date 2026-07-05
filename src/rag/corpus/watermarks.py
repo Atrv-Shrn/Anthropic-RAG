@@ -13,11 +13,16 @@ Schema: ``watermarks(repo TEXT, stream TEXT, last_synced_ts TEXT,
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 from typing import Iterable
 
-DEFAULT_DB = Path("data/watermarks.sqlite3")
+# Anchor to the repo root (src/rag/corpus/watermarks.py -> parents[3]) so the seed
+# and the server read/write the SAME watermarks DB regardless of the process CWD.
+# Overridable via the DATA_DIR env var (e.g. the container mounts /app/data).
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_DB = Path(os.environ.get("DATA_DIR") or (_REPO_ROOT / "data")) / "watermarks.sqlite3"
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS watermarks (

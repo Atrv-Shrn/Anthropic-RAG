@@ -13,6 +13,7 @@ no pipeline code change).
 
 from __future__ import annotations
 
+import threading
 from typing import Any
 
 from fastmcp import FastMCP
@@ -22,17 +23,35 @@ from rag.ingest.pipeline import get_docstore
 
 # Module-level singletons — built once at server startup and reused across calls
 # (building the query engine loads the bge cross-encoder and connects to the stores).
+# A lock guards lazy init so concurrent first requests don't double-build the engine
+# (which would load the cross-encoder twice — a memory spike on a small host).
 _query_engine = None
 _docstore = None
+_engine_lock = threading.Lock()
 
 
 def _get_query_engine():
     global _query_engine
     if _query_engine is None:
-        from rag.generate.query_engine import build_query_engine
+        with _engine_lock:
+            if _query_engine is None:  # re-check inside the lock
+                from rag.generate.query_engine import build_query_engine
 
-        _query_engine = build_query_engine()
+                _query_engine = build_query_engine()
     return _query_engine
+
+
+def invalidate_query_engine() -> None:
+    """Drop the cached query engine so the next request rebuilds it.
+
+    The BM25 (lexical) retriever is built from a snapshot of the docstore at engine
+    build time; after the scheduler ingests new documents, the cached engine's BM25
+    arm is stale. Calling this after an ingest makes the next ``answer`` rebuild over
+    the fresh docstore so lexical retrieval sees newly-ingested content.
+    """
+    global _query_engine
+    with _engine_lock:
+        _query_engine = None
 
 
 def _get_docstore(settings: Settings):
@@ -130,7 +149,6 @@ def run() -> None:
 
     s = get_settings()
     mcp = build_server(s)
-    middleware = [BearerAuthMiddleware] if s.mcp_auth_token else None
 
     # http_app gives us the ASGI app; we wrap it with the bearer gate when a token
     # is set (mcp.run() does not expose ASGI middleware). Run via uvicorn directly.

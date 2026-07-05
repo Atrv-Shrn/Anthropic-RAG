@@ -12,6 +12,12 @@ scratch/
 
 # ---- Runtime data (stores, watermarks, caches) ----
 data/
+# ...but do track the recorded eval baselines (small metric summaries, the quality bar).
+!data/evals/
+!data/evals/ragas_baseline.json
+!data/evals/native_baseline.json
+# predictions.json is bulky regenerable runtime output — keep it ignored.
+data/evals/predictions.json
 *.db
 *.sqlite
 *.sqlite3

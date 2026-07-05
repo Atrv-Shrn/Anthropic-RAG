@@ -1,0 +1,359 @@
+{
+  "n_records": 21,
+  "n_evaluated": 21,
+  "n_in_scope": 13,
+  "n_negative": 8,
+  "overall": {
+    "faithfulness": 0.7143,
+    "relevancy": 0.9048,
+    "correctness": 0.6667
+  },
+  "in_scope": {
+    "faithfulness": 0.6154,
+    "relevancy": 0.8462,
+    "correctness": 0.4615
+  },
+  "negative": {
+    "faithfulness": 0.875,
+    "relevancy": 1.0,
+    "correctness": 1.0
+  },
+  "per_item": [
+    {
+      "id": "sdk-py-stream-001",
+      "query": "How do I stream a response with the Anthropic Python SDK?",
+      "negative": false,
+      "answer": "You can stream a response using either of two approaches:\n\n1. **`client.messages.stream()` (recommended)** – returns a `MessageStreamManager` context manager that yields a `MessageStream`. The stream is iterable, emits events, and accumulates the final message. You can iterate over `stream.text_stream` to get just the text deltas:\n\n   ```python\n   async with client.messages.stream(\n       max_tokens=1024,\n       messages=[{\"role\": \"user\", \"content\": \"Say hello there!\"}],\n       model=\"claude-sonnet-5\",\n   ) as stream:\n       async for text in stream.text_stream:\n           print(text, end=\"\", flush=True)\n       print()\n   ```\n\n   The stream is cancelled when the context manager exits; you can also close it early with `stream.close()`. After the stream is fully consumed, you can retrieve the accumulated message via `await stream.get_final_message()`.\n\n2. **`client.messages.create(..., stream=True)`** – returns an iterable of raw stream events. It uses less memory because it does not accumulate a final message object for you.\n\nBoth methods are available on the synchronous client as well (without `async/await`).",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": false,
+      "relevancy": false,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "NO",
+        "relevancy": "NO",
+        "correctness": "The generated answer is fully correct, relevant, and provides a comprehensive explanation with code examples for both streaming methods, including details about `get_final_message()`, `text_stream`, and sync/async usage. It matches the reference answer and expands upon it without errors."
+      }
+    },
+    {
+      "id": "sdk-py-tools-001",
+      "query": "How do I define a tool the model can call with the Python SDK?",
+      "negative": false,
+      "answer": "You define a tool by decorating a Python function with `@beta_tool` (for synchronous functions) or `@beta_async_tool` (for async functions). The decorator inspects the function signature and docstring to automatically generate the JSON schema the API requires.\n\n**Example (sync):**\n```python\nfrom anthropic import beta_tool\n\n@beta_tool\ndef sum(left: int, right: int) -> str:\n    \"\"\"Adds two integers together.\n    Args:\n        left (int): The first integer to add.\n        right (int): The second integer to add.\n    Returns:\n        int: The sum of left and right integers.\n    \"\"\"\n    return str(left + right)\n```\n\n**Example (async):**\n```python\nfrom anthropic import beta_async_tool\n\n@beta_async_tool\nasync def fetch_data(url: str) -> str:\n    \"\"\"Fetches data from a URL.\n    Args:\n        url (str): The URL to fetch.\n    Returns:\n        str: The response body.\n    \"\"\"\n    # async implementation\n    return \"data\"\n```\n\nOnce defined, you can pass the tool’s schema to the API using its `.to_dict()` method:\n```python\nmessage = client.beta.messages.create(\n    tools=[sum.to_dict()],\n    model=\"claude-sonnet-4-5-20250929\",\n    max_tokens=1024,\n    messages=[{\"role\": \"user\", \"content\": \"What is 2 + 2?\"}],\n)\n```\n\nFor automatic invocation when the model requests a tool, use the `client.beta.messages.tool_runner()` helper (for standard messages) or `client.beta.sessions.events.tool_runner()` (for session-based interactions). The tool runner handles the call, posts the result, and yields a dispatch object.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": false,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "NO",
+        "relevancy": "YES",
+        "correctness": "The generated answer is directly relevant to the user query, correctly explains how to define a tool using the Python SDK with decorators, provides accurate code examples, and covers both manual and automatic invocation. It aligns with the reference answer's core concepts and contains no mistakes."
+      }
+    },
+    {
+      "id": "sdk-py-system-001",
+      "query": "How is the system prompt passed in the Python SDK?",
+      "negative": false,
+      "answer": "The system prompt is passed as the `system` parameter when calling `client.messages.create(...)` or `client.messages.stream(...)`.  \n\nFor example, from the reproduction code in issue #1424:\n\n```python\nCOMMON = dict(\n    model=\"claude-opus-4-7\",\n    max_tokens=2048,\n    system=\"Use code_execution.\",\n    messages=PROMPT,\n    tools=TOOLS,\n)\n\nasync with client.messages.stream(**COMMON) as stream:\n    ...\n```\n\nThe `system` key in the parameters dict sets the system prompt for the conversation.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly identifies the `system` parameter as the way to pass the system prompt in the Python SDK, provides a concrete code example, and mentions both `client.messages.create` and `client.messages.stream`. It is fully relevant and contains no mistakes."
+      }
+    },
+    {
+      "id": "sdk-py-maxtokens-001",
+      "query": "Is max_tokens required when creating a message with the Python SDK?",
+      "negative": false,
+      "answer": "I don't have enough information to answer whether `max_tokens` is required. The provided context only shows usage examples that include `max_tokens` (e.g., in issue #1424, `tools.md`, and `README.md`), but none of the documents explicitly state whether the parameter is required or optional.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": false,
+      "relevancy": true,
+      "correctness": false,
+      "feedback": {
+        "faithfulness": "NO",
+        "relevancy": "YES",
+        "correctness": "The generated answer is relevant to the query but contains a mistake: it claims insufficient information, while the reference answer clearly states that max_tokens is required. Thus, it is not fully correct."
+      }
+    },
+    {
+      "id": "sdk-py-vision-001",
+      "query": "How do I send an image to Claude with the Python SDK?",
+      "negative": false,
+      "answer": "I don't have enough information to answer that. The provided context (SDK README snippets and a feature request for a Databricks adapter) does not include any details about sending images or multimodal messages.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": false,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer does not provide any relevant information about sending an image to Claude with the Python SDK; it merely states a lack of information, making it completely irrelevant to the user query."
+      }
+    },
+    {
+      "id": "sdk-py-auth-001",
+      "query": "How does the Python SDK authenticate?",
+      "negative": false,
+      "answer": "The Python SDK authenticates using either an API key or an auth token, which can be provided directly or read from the environment variables `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN`. The API key is sent in the `X-Api-Key` header, while the auth token is sent as a `Bearer` token in the `Authorization` header. If neither is supplied, the SDK falls back to a default credentials path. The `AnthropicFoundry` class additionally supports Azure AD authentication via an `azure_ad_token_provider`.\n\nA recent fix ensures that empty strings from environment variables are treated as unset. Previously, an empty `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` would be used as a valid credential, causing malformed headers and request failures. Now, the SDK coerces empty environment values to `None` by applying `or None` when reading them, so a present-but-empty variable behaves the same as a missing one.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": false,
+      "relevancy": true,
+      "correctness": false,
+      "feedback": {
+        "faithfulness": "NO",
+        "relevancy": "YES",
+        "correctness": "The generated answer is relevant to the query but contains significant inaccuracies. The reference answer states that the SDK uses only the `ANTHROPIC_API_KEY` environment variable or an `api_key` parameter, and sends an auth header. The generated answer incorrectly introduces an auth token, `ANTHROPIC_AUTH_TOKEN`, `X-Api-Key` vs. `Bearer` headers, a fallback credentials path, `AnthropicFoundry` class, Azure AD authentication, and a fix for empty environment variables—none of which are mentioned in the reference and are likely hallucinations. These mistakes make the answer unreliable."
+      }
+    },
+    {
+      "id": "sdk-py-context-001",
+      "query": "How do I count tokens for a prompt before sending it with the Python SDK?",
+      "negative": false,
+      "answer": "To count tokens for a prompt before sending it, use the beta method:\n\n```python\nclient.beta.messages.count_tokens(...)\n```\n\nThe legacy `client.count_tokens()` method was **removed** in version `0.39.0` (see the breaking change in the changelog). The replacement `client.beta.messages.count_tokens()` supports newer models and all content types (images, PDFs, etc.).  \n\nAs of version `0.113.0`, the API also accepts user profile IDs when counting tokens (PR #1705, chore: “api: accept user profile ID's when counting tokens”).  \n\n**Sources:**  \n- CHANGELOG.md, `0.39.0` breaking change: “client: remove legacy `client.count_tokens()` & `client.get_tokenizer()` methods … replaced by the `client.beta.messages.count_tokens()` API”  \n- CHANGELOG.md, `0.38.0` bug fix: “count_tokens: correctly set beta header”  \n- PR #1705 (release 0.113.0) chore: “api: accept user profile ID's when counting tokens”",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly identifies the current method (`client.beta.messages.count_tokens(...)`) and explains the removal of the legacy method, making it fully correct and relevant to the user query. It also provides helpful context about version changes, which does not detract from correctness."
+      }
+    },
+    {
+      "id": "sdk-ts-stream-001",
+      "query": "How do I stream a response with the Anthropic TypeScript SDK?",
+      "negative": false,
+      "answer": "You can stream responses in two ways:\n\n1. **Using the `stream` helper** – Call `anthropic.messages.stream({ … }, options?)`. This returns a `MessageStream` that emits events (e.g., `text`, `message`, `error`), supports async iteration, and provides convenience methods to accumulate the final message.  \n   Example:  \n   ```ts\n   const stream = anthropic.messages.stream({ model: 'claude-sonnet-5', max_tokens: 1024, messages: […] });\n   stream.on('text', (delta, snapshot) => { … });\n   const finalMessage = await stream.finalMessage();\n   ```\n\n2. **Using `create` with `stream: true`** – Call `anthropic.messages.create({ stream: true, … })`. This returns an async iterable of raw stream chunks and uses less memory because it does not accumulate a full message object.  \n   Example:  \n   ```ts\n   const stream = await anthropic.messages.create({ model: 'claude-sonnet-5', max_tokens: 1024, messages: […], stream: true });\n   for await (const chunk of stream) { … }\n   ```\n\nTo cancel a stream, you can `break` from a `for await` loop or call `stream.abort()`.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer accurately describes both streaming methods (using the stream helper and using create with stream: true), provides clear code examples, and includes additional relevant details like event handling, finalMessage, and cancellation. It is fully correct and directly addresses the user query."
+      }
+    },
+    {
+      "id": "sdk-ts-tools-001",
+      "query": "How do I handle tool use in the TypeScript SDK?",
+      "negative": false,
+      "answer": "Based on the provided context, here’s how you can handle tool use in the Anthropic TypeScript SDK:\n\n### 1. Using the agent toolset (beta environments)\nThe SDK provides a helper to build and run a toolset for agent environments.  \n- **Get the default tools** with `betaAgentToolset20260401(ctx)`, which returns a plain array of `BetaRunnableTool`. You can filter or extend it:\n  ```ts\n  const tools = betaAgentToolset20260401(ctx).filter((t) => t.name !== 'grep');\n  const tools = [...betaAgentToolset20260401(ctx), myCustomTool];\n  ```\n- **Run the per-item flow** (build workdir + skills, run session tools, heartbeat lease) using the worker helper:\n  ```ts\n  await client.beta.environments.work.worker({ workdir: '/workspace', tools }).handleItem();\n  ```\n  If you already have the work/session objects, pass them explicitly:\n  ```ts\n  await client.beta.environments.work.worker({ workdir: '/workspace', tools }).handleItem({\n    workId: work.id,\n    environmentId: work.environment_id,\n    sessionId: work.data.id,\n    environmentKey: process.env.ANTHROPIC_ENVIRONMENT_KEY!,\n  });\n  ```\n- **For more control**, drive the poller and session tool runner directly using `setupSkills` and `AgentToolContext` (imported from `@anthropic-ai/sdk/tools/agent-toolset/node`).\n\n### 2. General tool use in the Messages API\n- **`tool_choice` parameter** lets you control how the model uses tools (added in v0.21.0).\n- **Streaming tool use** is supported. The server-sent events include `content_block_start` with `type: \"tool_use\"`, `content_block_delta` with `input_json_delta` fragments, and a final `message_delta` with `stop_reason: \"tool_use\"`.  \n  **New:** The SDK now lazily parses partial tool JSON input as it streams, so you can work with incremental tool arguments more easily without manually buffering and parsing the JSON fragments.\n\nThe context does not cover defining custom tools or sending tool results back to the model. For those details, consult the full SDK documentation.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": false,
+      "correctness": false,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "NO",
+        "correctness": "The generated answer focuses on beta agent toolset and streaming details, but fails to cover the fundamental pattern of defining tools with input_schema, passing them to messages.create, handling stop_reason 'tool_use', and replying with tool_result blocks, which is the core of handling tool use in the SDK. It acknowledges missing these parts, making it incomplete and not fully correct for the query."
+      }
+    },
+    {
+      "id": "sdk-ts-init-001",
+      "query": "How do I construct the Anthropic client in TypeScript?",
+      "negative": false,
+      "answer": "To construct the Anthropic client in TypeScript, import `Anthropic` from `@anthropic-ai/sdk` and instantiate it with an optional `apiKey` (defaults to the `ANTHROPIC_API_KEY` environment variable):\n\n```ts\nimport Anthropic from '@anthropic-ai/sdk';\n\nconst client = new Anthropic({\n  apiKey: process.env['ANTHROPIC_API_KEY'], // This is the default and can be omitted\n});\n```\n\nIf the `ANTHROPIC_API_KEY` environment variable is set, you can simply write:\n\n```ts\nconst client = new Anthropic();\n```\n\n**Source:** `README.md` in the `anthropic-sdk-typescript` repository.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer accurately and completely addresses the user query, providing clear TypeScript code examples and explaining both the explicit and default apiKey usage. It is fully correct and relevant, with no mistakes."
+      }
+    },
+    {
+      "id": "sdk-ts-system-001",
+      "query": "Where does the system prompt go in the TypeScript SDK?",
+      "negative": false,
+      "answer": "I don't have enough information to answer that question.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": false,
+      "relevancy": true,
+      "correctness": false,
+      "feedback": {
+        "faithfulness": "NO",
+        "relevancy": "YES",
+        "correctness": "The generated answer does not provide any information relevant to the user query; it simply states it cannot answer, which is not a valid response to the question."
+      }
+    },
+    {
+      "id": "general-pricing-001",
+      "query": "Where can I find Claude model context window and pricing details?",
+      "negative": false,
+      "answer": "The provided context does not contain information about Claude model context windows or pricing details. The documents cover SDK installation, usage, authentication, and changelogs, but none include model specifications like context window sizes or pricing.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": false,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer does not provide the correct location for the requested details; it merely states that the provided context lacks the information, which is not a helpful or accurate response to the user's query. The reference answer correctly points to Anthropic's official documentation and SDKs."
+      }
+    },
+    {
+      "id": "general-streaming-events-001",
+      "query": "What kinds of events appear when streaming a message?",
+      "negative": false,
+      "answer": "Based on the provided context, the following SSE event types appear when streaming a message:\n\n- **`message_delta`** – carries delta information such as `stop_reason`, `stop_sequence`, `usage`, and `container` (issue #1424).\n- **`content_block_start`** – signals the start of a content block (issue #1175).\n- **`content_block_delta`** – carries incremental content block data (issue #1175).\n- **`content_block_stop`** – signals the end of a content block (issue #1175).\n- **`message_stop`** – fired when the full message is done streaming; corresponds to the `message_stop` SSE event (TypeScript helpers.md, issue #1715).\n\nThese are the event types explicitly mentioned in the context.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": false,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly lists several event types, but it omits the `message_start` event that is explicitly mentioned in the reference answer. This omission makes the answer incomplete, though still relevant and mostly correct."
+      }
+    },
+    {
+      "id": "neg-001",
+      "query": "What is the capital of France?",
+      "negative": true,
+      "answer": "I don't have enough information in the provided context to answer that question. The context covers Anthropic SDK releases, a model update, and a connectivity issue, none of which mention the capital of France.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly states that it cannot answer the question based on the provided context, which aligns with the reference answer's guidance. It is relevant and fully correct."
+      }
+    },
+    {
+      "id": "neg-002",
+      "query": "What is the source code of the llama_index IngestionPipeline class?",
+      "negative": true,
+      "answer": "I don't have enough information to answer that question. The provided context is entirely about Anthropic's SDKs (Python and TypeScript) and does not contain any source code or details about the llama_index IngestionPipeline class.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly states that it cannot provide the source code, and it explains that the available context is limited to Anthropic's SDKs, which is consistent with the reference answer's indication that such source code is not included. The response is relevant and fully correct."
+      }
+    },
+    {
+      "id": "neg-003",
+      "query": "Give me the raw bytes of the bge-reranker model weights.",
+      "negative": true,
+      "answer": "I don't have enough information. The provided context covers pull requests in the `anthropics/anthropic-sdk-python` repository related to binary file handling in the agent toolset, skills upload path normalization, and API support for web fetch/support tools. None of these contain the raw bytes of the bge-reranker model weights.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly declines to provide the model weights, which are not available, and explains the limitation based on the provided context. It is fully relevant and contains no mistakes, aligning with the reference answer's guidance to decline rather than fabricate."
+      }
+    },
+    {
+      "id": "neg-004",
+      "query": "How do I file my taxes in the United States?",
+      "negative": true,
+      "answer": "I don't have enough information in the provided context to answer how to file taxes in the United States. The context only shows a simulated streaming response where the assistant begins to create a tax guide file but the content is incomplete (it cuts off at \"Filing taxes\"). The actual tax guide content is not included.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly states that it lacks sufficient information to answer the tax filing question, which aligns perfectly with the reference answer's expectation that the system should indicate it has no information. The additional detail about the incomplete context does not introduce any errors and remains fully relevant."
+      }
+    },
+    {
+      "id": "neg-005",
+      "query": "What is the implementation of QdrantVectorStore in this pipeline's source?",
+      "negative": true,
+      "answer": "The provided context does not contain any information about a `QdrantVectorStore` implementation. The context covers features of the Anthropic TypeScript SDK, such as `ToolError` and self-hosted environment runners, none of which reference QdrantVectorStore or any vector store pipeline.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly states that the context does not contain information about QdrantVectorStore, which is accurate and relevant to the query. It is fully correct, though it could have explained the reason (as the reference answer does) that the pipeline's internal source code is not part of the ingested corpus. Nonetheless, it contains no mistakes and is relevant."
+      }
+    },
+    {
+      "id": "neg-006",
+      "query": "Recommend a recipe for chocolate cake.",
+      "negative": true,
+      "answer": "I don't have enough information to answer that question. The provided context only contains details about Anthropic SDK issues and pull requests, with no mention of chocolate cake recipes.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly declines to provide a recipe, explaining that the context lacks such information, which aligns with the reference answer's expectation. It is relevant and fully correct."
+      }
+    },
+    {
+      "id": "neg-007",
+      "query": "What is OpenAI's GPT-4 pricing?",
+      "negative": true,
+      "answer": "I don't have enough information to answer that. The provided context is entirely about the Anthropic SDK and its tool runner features, and contains no mention of OpenAI or GPT-4 pricing.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": true,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "YES",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly states that it cannot answer the query because the provided context lacks information about OpenAI or GPT-4 pricing. This aligns with the reference answer's guidance that such competitor pricing should not be provided. The response is relevant, accurate, and appropriately handles the out-of-scope question."
+      }
+    },
+    {
+      "id": "neg-008",
+      "query": "Write a full Kubernetes deployment manifest for my company's services.",
+      "negative": true,
+      "answer": "I don't have enough information to answer that question. I would need details about your company's services, such as container images, resource requirements, environment variables, and networking configurations, to create a Kubernetes deployment manifest.",
+      "error": null,
+      "num_contexts": 6,
+      "faithfulness": false,
+      "relevancy": true,
+      "correctness": true,
+      "feedback": {
+        "faithfulness": "NO",
+        "relevancy": "YES",
+        "correctness": "The generated answer correctly identifies that it lacks sufficient information to create a Kubernetes deployment manifest and explains what details are needed. This is fully relevant and correct, aligning with the reference answer's implication that a tailored deployment should not be provided without proper grounding."
+      }
+    }
+  ]
+}

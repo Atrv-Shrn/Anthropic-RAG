@@ -17,16 +17,57 @@ incremental ingestion, served over an MCP server.
 
 ## Quickstart (local Docker)
 
+Two credentials are **required** — the stack does nothing without them:
+
+- `GITHUB_TOKEN` — a GitHub [personal access token](https://github.com/settings/tokens)
+  (classic, `public_repo` scope is enough) — used to fetch docs + issues/PRs/comments.
+- `OLLAMA_CLOUD_API_KEY` — an [Ollama Cloud](https://ollama.com) API key — used for
+  answer generation (`deepseek-v4-pro:cloud`) and the RAGAS judge.
+
 ```bash
 cp .env.example .env       # fill in GITHUB_TOKEN + OLLAMA_CLOUD_API_KEY
-uv sync
-docker compose up -d       # qdrant, redis, ollama(nomic), app
+# (optional) set MCP_AUTH_TOKEN to require a bearer token on the MCP endpoint
+docker compose up -d --build
 ```
+
+That brings up four services: `qdrant`, `redis`, `ollama` (a one-shot `ollama-init`
+pulls `nomic-embed-text` into the volume before the app starts), and `app`. On first
+boot the `app` container **seeds once, then serves** — it ingests the repos in
+`config/repos.yaml` before the MCP server accepts queries, so the first boot takes a
+few minutes (embedding runs on CPU). Watch progress with `docker compose logs -f app`;
+the server is ready when you see `MCP server starting on 0.0.0.0:8000`.
+
+> Re-`up` is cheap: the model is already in `./ollama_data` and UPSERTS dedup means
+> unchanged docs are never re-embedded.
+
+## Connecting an AI agent to the MCP server
+
+The server speaks **MCP over Streamable HTTP** at `http://<host>:8000/mcp` and exposes
+two tools: `answer(query)` and `get_documents(doc_ids)`. If `MCP_AUTH_TOKEN` is set,
+send it as `Authorization: Bearer <token>`.
+
+Example client config (Claude Desktop / Cline / any MCP client that supports HTTP):
+
+```json
+{
+  "mcpServers": {
+    "anthropic-rag": {
+      "type": "streamable-http",
+      "url": "http://localhost:8000/mcp",
+      "headers": { "Authorization": "Bearer <MCP_AUTH_TOKEN>" }
+    }
+  }
+}
+```
+
+Omit `headers` if you did not set `MCP_AUTH_TOKEN`. From another machine on the LAN,
+replace `localhost` with the host's IP.
 
 ## Hosting for many users
 
 Same stack on AWS EC2: open the MCP port in the security group + set `MCP_AUTH_TOKEN`.
-No pipeline code change — env + security group + auth only.
+No pipeline code change — env + security group + auth only. Then point clients at
+`http://<ec2-public-dns>:8000/mcp` with the bearer token.
 
 ## CLI
 
@@ -64,5 +105,5 @@ negative (refusal-rate) items are reported separately.
 ## Tests
 
 ```bash
-uv run python -m pytest        # 41 unit tests (pure logic; external services mocked)
+uv run python -m pytest        # 42 unit tests (pure logic; external services mocked)
 ```

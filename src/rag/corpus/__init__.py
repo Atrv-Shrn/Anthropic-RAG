@@ -1,0 +1,1 @@
+"""Corpus sourcing: GitHub readers (docs-only) + comments + per-stream watermarks."""

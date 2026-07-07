@@ -1,0 +1,107 @@
+# Local development stack for the Anthropic RAG pipeline.
+#
+# Backing services: Qdrant (dense vectors), Redis (docstore + UPSERTS dedup), and a
+# local Ollama daemon serving nomic-embed-text (dense embeddings only; generation
+# goes to remote Ollama Cloud). The `app` container runs the pipeline + hourly
+# scheduler + MCP server (entrypoint: seed once, then serve).
+#
+# Host ports are remapped (16333/16334, 16379, 11144) so `uv run` from the host
+# against this stack does not clash with other local qdrant/redis/ollama instances.
+# Inside the `app` container the services are reached by compose service name on
+# their standard internal ports (see the `environment:` overrides below).
+#
+# Lift to AWS EC2 for many users: same compose, deltas are env + security group
+# (open the MCP port) + MCP_AUTH_TOKEN only — no pipeline code change.
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.18.2
+    ports:
+      - "16333:6333"   # REST / dashboard (host 16333 to avoid clashing with other local stacks)
+      - "16334:6334"   # gRPC
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333 && echo -e \"GET /collections HTTP/1.1\\r\\nhost: localhost\\r\\n\\r\\n\" >&3 && head -n 1 <&3 | grep -q 200'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "16379:6379"
+    volumes:
+      - ./redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:0.31.1
+    ports:
+      - "11144:11434"
+    volumes:
+      - ./ollama_data:/root/.ollama
+    # GPU is optional; comment out if you have no NVIDIA runtime configured.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  # One-shot: pull the embedding model into the ollama volume, then exit. The app
+  # gates on this completing (service_completed_successfully) so the first embed
+  # call never hits an empty daemon ("model not found"). Idempotent — a re-`up`
+  # finds the model already in ./ollama_data and returns immediately.
+  ollama-init:
+    image: ollama/ollama:0.31.1
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "ollama pull ${EMBED_MODEL:-nomic-embed-text}"]
+    restart: "no"
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      # Inside the container, reach the backing services by compose service name
+      # on their standard internal ports (overrides the host-side .env defaults).
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379
+      OLLAMA_EMBED_BASE_URL: http://ollama:11434
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8000
+    ports:
+      - "8000:8000"   # MCP Streamable HTTP
+    volumes:
+      - ./data:/app/data   # SQLite watermarks
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    restart: unless-stopped

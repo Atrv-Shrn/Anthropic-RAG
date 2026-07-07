@@ -1,0 +1,1 @@
+"""MCP server: FastMCP over Streamable HTTP with exactly two tools."""

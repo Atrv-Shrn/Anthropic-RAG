@@ -1,0 +1,47 @@
+# ---- Internal docs / notes (never committed) ----
+docs/
+*.spec.md
+SPEC.md
+notes/
+scratch/
+
+# ---- Secrets & local env ----
+.env
+.env.*
+!.env.example
+
+# ---- Runtime data (stores, watermarks, caches) ----
+data/
+# ...but do track the recorded eval baselines (small metric summaries, the quality bar).
+!data/evals/
+!data/evals/ragas_baseline.json
+!data/evals/native_baseline.json
+# predictions.json is bulky regenerable runtime output — keep it ignored.
+data/evals/predictions.json
+*.db
+*.sqlite
+*.sqlite3
+qdrant_storage/
+redis_data/
+ollama_data/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.uv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.bak

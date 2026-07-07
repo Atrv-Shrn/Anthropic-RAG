@@ -1,0 +1,249 @@
+{
+  "_comment": "Hand-curated golden Q/A set for the Anthropic GitHub RAG pipeline. Each item has: id, query, reference (ground-truth answer used by correctness/answer-relevancy), repo (which Anthropic repo grounds it, or null for out-of-scope), tags, negative (true => out-of-scope; the system should NOT ground an answer in the corpus). Shared by run_ragas.py and run_native_evals.py so baselines are comparable. Reference answers are concise ideal answers, not verbatim corpus text.",
+  "items": [
+    {
+      "id": "sdk-py-stream-001",
+      "query": "How do I stream a response with the Anthropic Python SDK?",
+      "reference": "Use client.messages.stream(...) (or messages.create(..., stream=True)); iterate the returned stream to consume events, and call stream.get_final_message() to obtain the fully assembled Message once streaming completes.",
+      "repo": "anthropic-sdk-python",
+      "tags": [
+        "sdk",
+        "python",
+        "streaming"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-py-tools-001",
+      "query": "How do I define a tool the model can call with the Python SDK?",
+      "reference": "Pass a tool schema to the tools argument of client.messages.create, either as a dict matching the tool-use input_schema or via the @client.tools.use decorator / function-based tool helper; the model returns a tool_use block whose input you execute, then you return a tool_result in a follow-up user message.",
+      "repo": "anthropic-sdk-python",
+      "tags": [
+        "sdk",
+        "python",
+        "tool-use"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-py-system-001",
+      "query": "How is the system prompt passed in the Python SDK?",
+      "reference": "The system prompt is a top-level parameter on client.messages.create (system=...), separate from the user/assistant turns in the messages list, and may be a string or a list of structured content blocks.",
+      "repo": "anthropic-sdk-python",
+      "tags": [
+        "sdk",
+        "python",
+        "system-prompt"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-py-maxtokens-001",
+      "query": "Is max_tokens required when creating a message with the Python SDK?",
+      "reference": "Yes, max_tokens is a required parameter on messages.create; it caps the output length and must be set for every request.",
+      "repo": "anthropic-sdk-python",
+      "tags": [
+        "sdk",
+        "python",
+        "api"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-py-vision-001",
+      "query": "How do I send an image to Claude with the Python SDK?",
+      "reference": "Include an image content block in a user message: {'type': 'image', 'source': {'type': 'base64', 'media_type': 'image/png', 'data': '<base64>'}} (or a URL source). The messages list then contains that block alongside any text blocks.",
+      "repo": "anthropic-sdk-python",
+      "tags": [
+        "sdk",
+        "python",
+        "vision"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-py-auth-001",
+      "query": "How does the Python SDK authenticate?",
+      "reference": "The SDK reads the ANTHROPIC_API_KEY environment variable by default; you can also pass api_key= to the Anthropic() client constructor. An auth header is sent on each request.",
+      "repo": "anthropic-sdk-python",
+      "tags": [
+        "sdk",
+        "python",
+        "auth"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-py-context-001",
+      "query": "How do I count tokens for a prompt before sending it with the Python SDK?",
+      "reference": "Call client.messages.count_tokens(...), passing model, system, and messages; it returns the input token count without making a completion request.",
+      "repo": "anthropic-sdk-python",
+      "tags": [
+        "sdk",
+        "python",
+        "tokens"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-ts-stream-001",
+      "query": "How do I stream a response with the Anthropic TypeScript SDK?",
+      "reference": "Use client.messages.stream(...) which returns a stream helper with event handlers (on('text', ...), on('message', ...)) and a finalMessage() promise; or messages.create(..., stream: true) to iterate raw MessageStreamEvent chunks.",
+      "repo": "anthropic-sdk-typescript",
+      "tags": [
+        "sdk",
+        "typescript",
+        "streaming"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-ts-tools-001",
+      "query": "How do I handle tool use in the TypeScript SDK?",
+      "reference": "Define tools with an input_schema (or zod schema via client.tools), pass them to messages.create; when a stop_reason of 'tool_use' returns, execute the tool_use blocks' inputs and reply with a user message containing tool_result blocks.",
+      "repo": "anthropic-sdk-typescript",
+      "tags": [
+        "sdk",
+        "typescript",
+        "tool-use"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-ts-init-001",
+      "query": "How do I construct the Anthropic client in TypeScript?",
+      "reference": "import Anthropic from '@anthropic-ai/sdk'; const client = new Anthropic(); it reads ANTHROPIC_API_KEY from the environment, or pass apiKey/baseURL to the constructor.",
+      "repo": "anthropic-sdk-typescript",
+      "tags": [
+        "sdk",
+        "typescript",
+        "init"
+      ],
+      "negative": false
+    },
+    {
+      "id": "sdk-ts-system-001",
+      "query": "Where does the system prompt go in the TypeScript SDK?",
+      "reference": "system is a top-level argument on client.messages.create, separate from the messages array; it can be a string or an array of text blocks.",
+      "repo": "anthropic-sdk-typescript",
+      "tags": [
+        "sdk",
+        "typescript",
+        "system-prompt"
+      ],
+      "negative": false
+    },
+    {
+      "id": "general-pricing-001",
+      "query": "Where can I find Claude model context window and pricing details?",
+      "reference": "Model context windows, max output, and pricing are documented on Anthropic's models and pricing documentation pages; the SDKs also expose model metadata. Check the official docs for current per-model input/output token pricing.",
+      "repo": "anthropic-sdk-python",
+      "tags": [
+        "models",
+        "pricing",
+        "docs"
+      ],
+      "negative": false
+    },
+    {
+      "id": "general-streaming-events-001",
+      "query": "What kinds of events appear when streaming a message?",
+      "reference": "A message stream emits events like message_start, content_block_start, content_block_delta (text or tool_use input deltas), content_block_stop, and message_stop, plus a final usage/delta; clients reconstruct the full content and tool inputs from the deltas.",
+      "repo": "anthropic-sdk-typescript",
+      "tags": [
+        "sdk",
+        "streaming",
+        "events"
+      ],
+      "negative": false
+    },
+    {
+      "id": "neg-001",
+      "query": "What is the capital of France?",
+      "reference": "This question is not answerable from the Anthropic GitHub corpus; the system should respond that it has no information about it rather than grounding an answer in the repos.",
+      "repo": null,
+      "tags": [
+        "out-of-scope",
+        "geography"
+      ],
+      "negative": true
+    },
+    {
+      "id": "neg-002",
+      "query": "What is the source code of the llama_index IngestionPipeline class?",
+      "reference": "Source code is intentionally not ingested into the corpus (only docs, issues, PRs, and comments), so the system should not be able to return the implementation of an arbitrary third-party class from the Anthropic repos.",
+      "repo": null,
+      "tags": [
+        "out-of-scope",
+        "source-code"
+      ],
+      "negative": true
+    },
+    {
+      "id": "neg-003",
+      "query": "Give me the raw bytes of the bge-reranker model weights.",
+      "reference": "Model weights are binary artifacts not present in the docs/issues corpus; the system should decline rather than fabricate them.",
+      "repo": null,
+      "tags": [
+        "out-of-scope",
+        "binary"
+      ],
+      "negative": true
+    },
+    {
+      "id": "neg-004",
+      "query": "How do I file my taxes in the United States?",
+      "reference": "Tax advice is unrelated to the Anthropic GitHub organization and not present in the corpus; the system should say it has no information about it.",
+      "repo": null,
+      "tags": [
+        "out-of-scope",
+        "finance"
+      ],
+      "negative": true
+    },
+    {
+      "id": "neg-005",
+      "query": "What is the implementation of QdrantVectorStore in this pipeline's source?",
+      "reference": "The pipeline's own internal source code is not part of the ingested corpus (docs/issues/comments only), so the system should not return implementation details of internal modules.",
+      "repo": null,
+      "tags": [
+        "out-of-scope",
+        "internal-source"
+      ],
+      "negative": true
+    },
+    {
+      "id": "neg-006",
+      "query": "Recommend a recipe for chocolate cake.",
+      "reference": "Cooking recipes are outside the Anthropic GitHub scope; the system should decline to answer from the corpus.",
+      "repo": null,
+      "tags": [
+        "out-of-scope",
+        "cooking"
+      ],
+      "negative": true
+    },
+    {
+      "id": "neg-007",
+      "query": "What is OpenAI's GPT-4 pricing?",
+      "reference": "Competitor model pricing is not part of the Anthropic corpus; the system should not provide it as grounded information from these repos.",
+      "repo": null,
+      "tags": [
+        "out-of-scope",
+        "competitor"
+      ],
+      "negative": true
+    },
+    {
+      "id": "neg-008",
+      "query": "Write a full Kubernetes deployment manifest for my company's services.",
+      "reference": "This is a generic infra request unrelated to the Anthropic repos; without repo-specific grounding the system should not present a tailored deployment as if sourced from the corpus.",
+      "repo": null,
+      "tags": [
+        "out-of-scope",
+        "infra"
+      ],
+      "negative": true
+    }
+  ]
+}

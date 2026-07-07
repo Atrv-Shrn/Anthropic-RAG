@@ -1,0 +1,724 @@
+{
+  "n_records": 21,
+  "n_evaluated": 21,
+  "n_in_scope": 13,
+  "n_negative": 8,
+  "ragas_metrics": [
+    "faithfulness",
+    "answer_relevancy",
+    "context_precision",
+    "context_recall"
+  ],
+  "overall": {
+    "faithfulness": 0.6616,
+    "context_recall": 0.1746,
+    "context_precision": 0.2337,
+    "answer_relevancy": 0.3691,
+    "bleu_1": 0.1299,
+    "rouge_l_precision": 0.0844,
+    "rouge_l_recall": 0.1944,
+    "rouge_l_f": 0.1092,
+    "bleu_4": 0.0046,
+    "semantic_similarity": 0.7832,
+    "bleu_2": 0.0244,
+    "bleu_3": 0.0064
+  },
+  "in_scope": {
+    "faithfulness": 0.7547,
+    "context_recall": 0.2821,
+    "context_precision": 0.342,
+    "answer_relevancy": 0.542,
+    "bleu_1": 0.1069,
+    "rouge_l_precision": 0.0761,
+    "rouge_l_recall": 0.2217,
+    "rouge_l_f": 0.1051,
+    "bleu_4": 0.0074,
+    "semantic_similarity": 0.8135,
+    "bleu_2": 0.0244,
+    "bleu_3": 0.0103
+  },
+  "negative": {
+    "faithfulness": 0.5104,
+    "context_recall": 0.0,
+    "context_precision": 0.0847,
+    "answer_relevancy": 0.0881,
+    "bleu_1": 0.1672,
+    "rouge_l_precision": 0.0978,
+    "rouge_l_recall": 0.1501,
+    "rouge_l_f": 0.116,
+    "bleu_4": 0.0,
+    "semantic_similarity": 0.7338,
+    "bleu_2": 0.0245,
+    "bleu_3": 0.0,
+    "refusal_rate": 0.875
+  },
+  "per_item": [
+    {
+      "id": "sdk-py-stream-001",
+      "query": "How do I stream a response with the Anthropic Python SDK?",
+      "negative": false,
+      "answer": "You can stream a response using either of two approaches:\n\n1. **`client.messages.stream()` (recommended)** – returns a `MessageStreamManager` context manager that yields a `MessageStream`. The stream is iterable, emits events, and accumulates the final message. You can iterate over `stream.text_stream` to get just the text deltas:\n\n   ```python\n   async with client.messages.stream(\n       max_tokens=1024,\n       messages=[{\"role\": \"user\", \"content\": \"Say hello there!\"}],\n       model=\"claude-sonnet-5\",\n   ) as stream:\n       async for text in stream.text_stream:\n           print(text, end=\"\", flush=True)\n       print()\n   ```\n\n   The stream is cancelled when the context manager exits; you can also close it early with `stream.close()`. After the stream is fully consumed, you can retrieve the accumulated message via `await stream.get_final_message()`.\n\n2. **`client.messages.create(..., stream=True)`** – returns an iterable of raw stream events. It uses less memory because it does not accumulate a final message object for you.\n\nBoth methods are available on the synchronous client as well (without `async/await`).",
+      "error": null,
+      "source_doc_ids": [
+        "94e31d05797fbb93ea35937b65d2114ce0d5844b",
+        "a9a7b2babb5461bdff3122d3a6804af77df70227",
+        "387169ce783c845075e10f49f60c80fe9ec032f3"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 0.8823529411764706,
+        "answer_relevancy": 0.6365473279541045,
+        "context_precision": null,
+        "context_recall": 1.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.05755395683453238,
+        "rouge_l_recall": 0.3333333333333333,
+        "rouge_l_f": 0.09815950920245398,
+        "bleu_1": 0.06474820143884892,
+        "bleu_2": 0.007246376811594203,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.8603888733667632
+      }
+    },
+    {
+      "id": "sdk-py-tools-001",
+      "query": "How do I define a tool the model can call with the Python SDK?",
+      "negative": false,
+      "answer": "You define a tool by decorating a Python function with `@beta_tool` (for synchronous functions) or `@beta_async_tool` (for async functions). The decorator inspects the function signature and docstring to automatically generate the JSON schema the API requires.\n\n**Example (sync):**\n```python\nfrom anthropic import beta_tool\n\n@beta_tool\ndef sum(left: int, right: int) -> str:\n    \"\"\"Adds two integers together.\n    Args:\n        left (int): The first integer to add.\n        right (int): The second integer to add.\n    Returns:\n        int: The sum of left and right integers.\n    \"\"\"\n    return str(left + right)\n```\n\n**Example (async):**\n```python\nfrom anthropic import beta_async_tool\n\n@beta_async_tool\nasync def fetch_data(url: str) -> str:\n    \"\"\"Fetches data from a URL.\n    Args:\n        url (str): The URL to fetch.\n    Returns:\n        str: The response body.\n    \"\"\"\n    # async implementation\n    return \"data\"\n```\n\nOnce defined, you can pass the tool’s schema to the API using its `.to_dict()` method:\n```python\nmessage = client.beta.messages.create(\n    tools=[sum.to_dict()],\n    model=\"claude-sonnet-4-5-20250929\",\n    max_tokens=1024,\n    messages=[{\"role\": \"user\", \"content\": \"What is 2 + 2?\"}],\n)\n```\n\nFor automatic invocation when the model requests a tool, use the `client.beta.messages.tool_runner()` helper (for standard messages) or `client.beta.sessions.events.tool_runner()` (for session-based interactions). The tool runner handles the call, posts the result, and yields a dispatch object.",
+      "error": null,
+      "source_doc_ids": [
+        "f4408e403d00a0ac2bccddbc413976d2c0cee3d4",
+        "anthropics/anthropic-sdk-python#1424",
+        "391d46f993043024470730303ae5f5e3fb516e16",
+        "a9a7b2babb5461bdff3122d3a6804af77df70227"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.6460590718689743,
+        "context_precision": null,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.07027027027027027,
+        "rouge_l_recall": 0.2826086956521739,
+        "rouge_l_f": 0.11255411255411256,
+        "bleu_1": 0.11351351351351352,
+        "bleu_2": 0.021739130434782608,
+        "bleu_3": 0.00546448087431694,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.7924813415170051
+      }
+    },
+    {
+      "id": "sdk-py-system-001",
+      "query": "How is the system prompt passed in the Python SDK?",
+      "negative": false,
+      "answer": "The system prompt is passed as the `system` parameter when calling `client.messages.create(...)` or `client.messages.stream(...)`.  \n\nFor example, from the reproduction code in issue #1424:\n\n```python\nCOMMON = dict(\n    model=\"claude-opus-4-7\",\n    max_tokens=2048,\n    system=\"Use code_execution.\",\n    messages=PROMPT,\n    tools=TOOLS,\n)\n\nasync with client.messages.stream(**COMMON) as stream:\n    ...\n```\n\nThe `system` key in the parameters dict sets the system prompt for the conversation.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1424",
+        "a9a7b2babb5461bdff3122d3a6804af77df70227",
+        "anthropics/anthropic-sdk-python/comment/4872448285",
+        "6e32f45fee18ae7dd634fee4751185fbbc4e9fd7",
+        "anthropics/anthropic-sdk-python#1640"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.7064413303723659,
+        "context_precision": 0.699999999965,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.16981132075471697,
+        "rouge_l_recall": 0.2903225806451613,
+        "rouge_l_f": 0.21428571428571427,
+        "bleu_1": 0.18867924528301888,
+        "bleu_2": 0.09615384615384616,
+        "bleu_3": 0.0392156862745098,
+        "bleu_4": 0.02,
+        "semantic_similarity": 0.8344689716079726
+      }
+    },
+    {
+      "id": "sdk-py-maxtokens-001",
+      "query": "Is max_tokens required when creating a message with the Python SDK?",
+      "negative": false,
+      "answer": "I don't have enough information to answer whether `max_tokens` is required. The provided context only shows usage examples that include `max_tokens` (e.g., in issue #1424, `tools.md`, and `README.md`), but none of the documents explicitly state whether the parameter is required or optional.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1424",
+        "f4408e403d00a0ac2bccddbc413976d2c0cee3d4",
+        "4330e385ccf5e7cac8815790a276f330120e1b22",
+        "f072c1f8eb161007276dd3ce2e5b023c777e85d5",
+        "anthropics/anthropic-sdk-python/comment/4865955059"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 0.6666666666666666,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.6458333333171874,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.07142857142857142,
+        "rouge_l_recall": 0.15,
+        "rouge_l_f": 0.09677419354838708,
+        "bleu_1": 0.11904761904761904,
+        "bleu_2": 0.0,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.8681816449553931
+      }
+    },
+    {
+      "id": "sdk-py-vision-001",
+      "query": "How do I send an image to Claude with the Python SDK?",
+      "negative": false,
+      "answer": "I don't have enough information to answer that. The provided context (SDK README snippets and a feature request for a Databricks adapter) does not include any details about sending images or multimodal messages.",
+      "error": null,
+      "source_doc_ids": [
+        "4330e385ccf5e7cac8815790a276f330120e1b22",
+        "9f7a9f815e44614e5dc695c843f6e2f790f28d79",
+        "anthropics/anthropic-sdk-python#1724"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 0.75,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.09090909090909091,
+        "rouge_l_recall": 0.09090909090909091,
+        "rouge_l_f": 0.09090909090909091,
+        "bleu_1": 0.15151515151515152,
+        "bleu_2": 0.0,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.7576045287825208
+      }
+    },
+    {
+      "id": "sdk-py-auth-001",
+      "query": "How does the Python SDK authenticate?",
+      "negative": false,
+      "answer": "The Python SDK authenticates using either an API key or an auth token, which can be provided directly or read from the environment variables `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN`. The API key is sent in the `X-Api-Key` header, while the auth token is sent as a `Bearer` token in the `Authorization` header. If neither is supplied, the SDK falls back to a default credentials path. The `AnthropicFoundry` class additionally supports Azure AD authentication via an `azure_ad_token_provider`.\n\nA recent fix ensures that empty strings from environment variables are treated as unset. Previously, an empty `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` would be used as a valid credential, causing malformed headers and request failures. Now, the SDK coerces empty environment values to `None` by applying `or None` when reading them, so a present-but-empty variable behaves the same as a missing one.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1640",
+        "f072c1f8eb161007276dd3ce2e5b023c777e85d5",
+        "anthropics/anthropic-sdk-python#1726",
+        "19815a85b3711191a196145bc339ba0b25debc7b",
+        "6e32f45fee18ae7dd634fee4751185fbbc4e9fd7",
+        "anthropics/anthropic-sdk-python/comment/4846363699"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.8012866742370415,
+        "context_precision": 0.0,
+        "context_recall": 1.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.05970149253731343,
+        "rouge_l_recall": 0.2962962962962963,
+        "rouge_l_f": 0.09937888198757763,
+        "bleu_1": 0.09701492537313433,
+        "bleu_2": 0.022556390977443608,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.8995982404450823
+      }
+    },
+    {
+      "id": "sdk-py-context-001",
+      "query": "How do I count tokens for a prompt before sending it with the Python SDK?",
+      "negative": false,
+      "answer": "To count tokens for a prompt before sending it, use the beta method:\n\n```python\nclient.beta.messages.count_tokens(...)\n```\n\nThe legacy `client.count_tokens()` method was **removed** in version `0.39.0` (see the breaking change in the changelog). The replacement `client.beta.messages.count_tokens()` supports newer models and all content types (images, PDFs, etc.).  \n\nAs of version `0.113.0`, the API also accepts user profile IDs when counting tokens (PR #1705, chore: “api: accept user profile ID's when counting tokens”).  \n\n**Sources:**  \n- CHANGELOG.md, `0.39.0` breaking change: “client: remove legacy `client.count_tokens()` & `client.get_tokenizer()` methods … replaced by the `client.beta.messages.count_tokens()` API”  \n- CHANGELOG.md, `0.38.0` bug fix: “count_tokens: correctly set beta header”  \n- PR #1705 (release 0.113.0) chore: “api: accept user profile ID's when counting tokens”",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1705",
+        "6e32f45fee18ae7dd634fee4751185fbbc4e9fd7",
+        "anthropics/anthropic-sdk-typescript#1101"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 0.4,
+        "answer_relevancy": 0.8094999213339291,
+        "context_precision": 0.4166666666458333,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.017857142857142856,
+        "rouge_l_recall": 0.1111111111111111,
+        "rouge_l_f": 0.03076923076923077,
+        "bleu_1": 0.03571428571428571,
+        "bleu_2": 0.0,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.825367633733759
+      }
+    },
+    {
+      "id": "sdk-ts-stream-001",
+      "query": "How do I stream a response with the Anthropic TypeScript SDK?",
+      "negative": false,
+      "answer": "You can stream responses in two ways:\n\n1. **Using the `stream` helper** – Call `anthropic.messages.stream({ … }, options?)`. This returns a `MessageStream` that emits events (e.g., `text`, `message`, `error`), supports async iteration, and provides convenience methods to accumulate the final message.  \n   Example:  \n   ```ts\n   const stream = anthropic.messages.stream({ model: 'claude-sonnet-5', max_tokens: 1024, messages: […] });\n   stream.on('text', (delta, snapshot) => { … });\n   const finalMessage = await stream.finalMessage();\n   ```\n\n2. **Using `create` with `stream: true`** – Call `anthropic.messages.create({ stream: true, … })`. This returns an async iterable of raw stream chunks and uses less memory because it does not accumulate a full message object.  \n   Example:  \n   ```ts\n   const stream = await anthropic.messages.create({ model: 'claude-sonnet-5', max_tokens: 1024, messages: […], stream: true });\n   for await (const chunk of stream) { … }\n   ```\n\nTo cancel a stream, you can `break` from a `for await` loop or call `stream.abort()`.",
+      "error": null,
+      "source_doc_ids": [
+        "387169ce783c845075e10f49f60c80fe9ec032f3",
+        "94e31d05797fbb93ea35937b65d2114ce0d5844b",
+        "a9a7b2babb5461bdff3122d3a6804af77df70227",
+        "359f64a3cc33f79cea0149d82c26888cf82f095d"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 0.875,
+        "answer_relevancy": 0.8417662363113483,
+        "context_precision": 0.9999999999666667,
+        "context_recall": 1.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.058394160583941604,
+        "rouge_l_recall": 0.2962962962962963,
+        "rouge_l_f": 0.09756097560975609,
+        "bleu_1": 0.072992700729927,
+        "bleu_2": 0.007352941176470588,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.8452923581730316
+      }
+    },
+    {
+      "id": "sdk-ts-tools-001",
+      "query": "How do I handle tool use in the TypeScript SDK?",
+      "negative": false,
+      "answer": "Based on the provided context, here’s how you can handle tool use in the Anthropic TypeScript SDK:\n\n### 1. Using the agent toolset (beta environments)\nThe SDK provides a helper to build and run a toolset for agent environments.  \n- **Get the default tools** with `betaAgentToolset20260401(ctx)`, which returns a plain array of `BetaRunnableTool`. You can filter or extend it:\n  ```ts\n  const tools = betaAgentToolset20260401(ctx).filter((t) => t.name !== 'grep');\n  const tools = [...betaAgentToolset20260401(ctx), myCustomTool];\n  ```\n- **Run the per-item flow** (build workdir + skills, run session tools, heartbeat lease) using the worker helper:\n  ```ts\n  await client.beta.environments.work.worker({ workdir: '/workspace', tools }).handleItem();\n  ```\n  If you already have the work/session objects, pass them explicitly:\n  ```ts\n  await client.beta.environments.work.worker({ workdir: '/workspace', tools }).handleItem({\n    workId: work.id,\n    environmentId: work.environment_id,\n    sessionId: work.data.id,\n    environmentKey: process.env.ANTHROPIC_ENVIRONMENT_KEY!,\n  });\n  ```\n- **For more control**, drive the poller and session tool runner directly using `setupSkills` and `AgentToolContext` (imported from `@anthropic-ai/sdk/tools/agent-toolset/node`).\n\n### 2. General tool use in the Messages API\n- **`tool_choice` parameter** lets you control how the model uses tools (added in v0.21.0).\n- **Streaming tool use** is supported. The server-sent events include `content_block_start` with `type: \"tool_use\"`, `content_block_delta` with `input_json_delta` fragments, and a final `message_delta` with `stop_reason: \"tool_use\"`.  \n  **New:** The SDK now lazily parses partial tool JSON input as it streams, so you can work with incremental tool arguments more easily without manually buffering and parsing the JSON fragments.\n\nThe context does not cover defining custom tools or sending tool results back to the model. For those details, consult the full SDK documentation.",
+      "error": null,
+      "source_doc_ids": [
+        "387169ce783c845075e10f49f60c80fe9ec032f3",
+        "359f64a3cc33f79cea0149d82c26888cf82f095d",
+        "54d8fbefa427a2a0c2f9cca8fb35bbb2c087e5a2",
+        "6cb4fb62b1ad7d2540ffaf3f17a594f694ee2202",
+        "e8759ee603f4003ade104636f5ee51abc95b759f",
+        "0eb171f5a0606cce19775726e6028c444baa1c6f"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 0.7222222222222222,
+        "answer_relevancy": 0.8441635417628323,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.028455284552845527,
+        "rouge_l_recall": 0.20588235294117646,
+        "rouge_l_f": 0.049999999999999996,
+        "bleu_1": 0.044715447154471545,
+        "bleu_2": 0.004081632653061225,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.6923547049120822
+      }
+    },
+    {
+      "id": "sdk-ts-init-001",
+      "query": "How do I construct the Anthropic client in TypeScript?",
+      "negative": false,
+      "answer": "To construct the Anthropic client in TypeScript, import `Anthropic` from `@anthropic-ai/sdk` and instantiate it with an optional `apiKey` (defaults to the `ANTHROPIC_API_KEY` environment variable):\n\n```ts\nimport Anthropic from '@anthropic-ai/sdk';\n\nconst client = new Anthropic({\n  apiKey: process.env['ANTHROPIC_API_KEY'], // This is the default and can be omitted\n});\n```\n\nIf the `ANTHROPIC_API_KEY` environment variable is set, you can simply write:\n\n```ts\nconst client = new Anthropic();\n```\n\n**Source:** `README.md` in the `anthropic-sdk-typescript` repository.",
+      "error": null,
+      "source_doc_ids": [
+        "9f7a9f815e44614e5dc695c843f6e2f790f28d79",
+        "5d33e67857c03afae79754a2c8630d3d835581f0",
+        "d46a3b493b5805d859cf2e2b4e897cf75b2759d7",
+        "anthropics/anthropic-sdk-python#1640",
+        "359f64a3cc33f79cea0149d82c26888cf82f095d"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 0.8,
+        "answer_relevancy": 0.925853094035473,
+        "context_precision": 0.9999999999,
+        "context_recall": 0.6666666666666666
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.13043478260869565,
+        "rouge_l_recall": 0.45,
+        "rouge_l_f": 0.20224719101123598,
+        "bleu_1": 0.18840579710144928,
+        "bleu_2": 0.11764705882352941,
+        "bleu_3": 0.08955223880597014,
+        "bleu_4": 0.07575757575757576,
+        "semantic_similarity": 0.9102615114574475
+      }
+    },
+    {
+      "id": "sdk-ts-system-001",
+      "query": "Where does the system prompt go in the TypeScript SDK?",
+      "negative": false,
+      "answer": "I don't have enough information to answer that question.",
+      "error": null,
+      "source_doc_ids": [
+        "95b204aa321dcfadcde28fb2b77048b2e123315a",
+        "anthropics/anthropic-sdk-typescript/comment/4860345292",
+        "6cb4fb62b1ad7d2540ffaf3f17a594f694ee2202",
+        "anthropics/anthropic-sdk-typescript/comment/4847356874",
+        "anthropics/anthropic-sdk-typescript/comment/4846454370",
+        "anthropics/anthropic-sdk-typescript/comment/4833980546"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.0,
+        "rouge_l_recall": 0.0,
+        "rouge_l_f": 0.0,
+        "bleu_1": 0.0,
+        "bleu_2": 0.0,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.5571733429410468
+      }
+    },
+    {
+      "id": "general-pricing-001",
+      "query": "Where can I find Claude model context window and pricing details?",
+      "negative": false,
+      "answer": "The provided context does not contain information about Claude model context windows or pricing details. The documents cover SDK installation, usage, authentication, and changelogs, but none include model specifications like context window sizes or pricing.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1732",
+        "5d33e67857c03afae79754a2c8630d3d835581f0",
+        "9f7a9f815e44614e5dc695c843f6e2f790f28d79",
+        "d46a3b493b5805d859cf2e2b4e897cf75b2759d7",
+        "6e32f45fee18ae7dd634fee4751185fbbc4e9fd7",
+        "359f64a3cc33f79cea0149d82c26888cf82f095d"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.17142857142857143,
+        "rouge_l_recall": 0.1875,
+        "rouge_l_f": 0.1791044776119403,
+        "bleu_1": 0.22857142857142856,
+        "bleu_2": 0.029411764705882353,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.8383763168128447
+      }
+    },
+    {
+      "id": "general-streaming-events-001",
+      "query": "What kinds of events appear when streaming a message?",
+      "negative": false,
+      "answer": "Based on the provided context, the following SSE event types appear when streaming a message:\n\n- **`message_delta`** – carries delta information such as `stop_reason`, `stop_sequence`, `usage`, and `container` (issue #1424).\n- **`content_block_start`** – signals the start of a content block (issue #1175).\n- **`content_block_delta`** – carries incremental content block data (issue #1175).\n- **`content_block_stop`** – signals the end of a content block (issue #1175).\n- **`message_stop`** – fired when the full message is done streaming; corresponds to the `message_stop` SSE event (TypeScript helpers.md, issue #1715).\n\nThese are the event types explicitly mentioned in the context.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1424",
+        "anthropics/anthropic-sdk-python#1715",
+        "387169ce783c845075e10f49f60c80fe9ec032f3",
+        "anthropics/anthropic-sdk-python#1175"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 0.7142857142857143,
+        "answer_relevancy": 0.8346840807874832,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.06315789473684211,
+        "rouge_l_recall": 0.1875,
+        "rouge_l_f": 0.09448818897637797,
+        "bleu_1": 0.08421052631578947,
+        "bleu_2": 0.010638297872340425,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.8944244750804281
+      }
+    },
+    {
+      "id": "neg-001",
+      "query": "What is the capital of France?",
+      "negative": true,
+      "answer": "I don't have enough information in the provided context to answer that question. The context covers Anthropic SDK releases, a model update, and a connectivity issue, none of which mention the capital of France.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1705",
+        "anthropics/anthropic-sdk-typescript#1102",
+        "anthropics/anthropic-sdk-python#1716",
+        "4330e385ccf5e7cac8815790a276f330120e1b22",
+        "anthropics/anthropic-sdk-python#1520",
+        "anthropics/anthropic-sdk-typescript#1104"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.08823529411764706,
+        "rouge_l_recall": 0.10344827586206896,
+        "rouge_l_f": 0.09523809523809523,
+        "bleu_1": 0.23529411764705882,
+        "bleu_2": 0.030303030303030304,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.7406287558344785
+      }
+    },
+    {
+      "id": "neg-002",
+      "query": "What is the source code of the llama_index IngestionPipeline class?",
+      "negative": true,
+      "answer": "I don't have enough information to answer that question. The provided context is entirely about Anthropic's SDKs (Python and TypeScript) and does not contain any source code or details about the llama_index IngestionPipeline class.",
+      "error": null,
+      "source_doc_ids": [
+        "391d46f993043024470730303ae5f5e3fb516e16",
+        "anthropics/anthropic-sdk-python#1727",
+        "19815a85b3711191a196145bc339ba0b25debc7b",
+        "3fda1573bb074f9a510f8864a4dfe84499dc79a1",
+        "anthropics/anthropic-sdk-python/comment/4865955059",
+        "anthropics/anthropic-sdk-python#1604"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 0.25,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.11764705882352941,
+        "rouge_l_recall": 0.11428571428571428,
+        "rouge_l_f": 0.11594202898550723,
+        "bleu_1": 0.22847448277469112,
+        "bleu_2": 0.02942474399371022,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.794347221682453
+      }
+    },
+    {
+      "id": "neg-003",
+      "query": "Give me the raw bytes of the bge-reranker model weights.",
+      "negative": true,
+      "answer": "I don't have enough information. The provided context covers pull requests in the `anthropics/anthropic-sdk-python` repository related to binary file handling in the agent toolset, skills upload path normalization, and API support for web fetch/support tools. None of these contain the raw bytes of the bge-reranker model weights.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1727",
+        "anthropics/anthropic-sdk-python#1604",
+        "anthropics/anthropic-sdk-python#1705"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 0.6666666666666666,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.0851063829787234,
+        "rouge_l_recall": 0.21052631578947367,
+        "rouge_l_f": 0.12121212121212122,
+        "bleu_1": 0.10638297872340426,
+        "bleu_2": 0.021739130434782608,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.7104919212221886
+      }
+    },
+    {
+      "id": "neg-004",
+      "query": "How do I file my taxes in the United States?",
+      "negative": true,
+      "answer": "I don't have enough information in the provided context to answer how to file taxes in the United States. The context only shows a simulated streaming response where the assistant begins to create a tax guide file but the content is incomplete (it cuts off at \"Filing taxes\"). The actual tax guide content is not included.",
+      "error": null,
+      "source_doc_ids": [
+        "95190443ace33085bcd86189804062f573846fed",
+        "86573fe8448c381ede054e942565b18559caf678",
+        "anthropics/anthropic-sdk-python#1683"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 0.5,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.07142857142857142,
+        "rouge_l_recall": 0.16,
+        "rouge_l_f": 0.09876543209876543,
+        "bleu_1": 0.16071428571428573,
+        "bleu_2": 0.01818181818181818,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.7516317839483421
+      }
+    },
+    {
+      "id": "neg-005",
+      "query": "What is the implementation of QdrantVectorStore in this pipeline's source?",
+      "negative": true,
+      "answer": "The provided context does not contain any information about a `QdrantVectorStore` implementation. The context covers features of the Anthropic TypeScript SDK, such as `ToolError` and self-hosted environment runners, none of which reference QdrantVectorStore or any vector store pipeline.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1719",
+        "391d46f993043024470730303ae5f5e3fb516e16",
+        "485fce8617c9df053f0bed2dd56873df0371b0d0",
+        "anthropics/anthropic-sdk-typescript#1046",
+        "anthropics/anthropic-sdk-python#1732",
+        "387169ce783c845075e10f49f60c80fe9ec032f3"
+      ],
+      "num_contexts": 6,
+      "refused": false,
+      "ragas": {
+        "faithfulness": 1.0,
+        "answer_relevancy": 0.7045297181027008,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.13157894736842105,
+        "rouge_l_recall": 0.19230769230769232,
+        "rouge_l_f": 0.15625,
+        "bleu_1": 0.15789473684210525,
+        "bleu_2": 0.02702702702702703,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.659871494521589
+      }
+    },
+    {
+      "id": "neg-006",
+      "query": "Recommend a recipe for chocolate cake.",
+      "negative": true,
+      "answer": "I don't have enough information to answer that question. The provided context only contains details about Anthropic SDK issues and pull requests, with no mention of chocolate cake recipes.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1732",
+        "anthropics/anthropic-sdk-typescript#1108",
+        "anthropics/anthropic-sdk-typescript#1105",
+        "anthropics/anthropic-sdk-python#1519",
+        "anthropics/anthropic-sdk-typescript#1106"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 0.3333333333333333,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.0,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.10344827586206896,
+        "rouge_l_recall": 0.17647058823529413,
+        "rouge_l_f": 0.13043478260869565,
+        "bleu_1": 0.13793103448275862,
+        "bleu_2": 0.03571428571428571,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.8065601842132336
+      }
+    },
+    {
+      "id": "neg-007",
+      "query": "What is OpenAI's GPT-4 pricing?",
+      "negative": true,
+      "answer": "I don't have enough information to answer that. The provided context is entirely about the Anthropic SDK and its tool runner features, and contains no mention of OpenAI or GPT-4 pricing.",
+      "error": null,
+      "source_doc_ids": [
+        "anthropics/anthropic-sdk-python#1724",
+        "359f64a3cc33f79cea0149d82c26888cf82f095d",
+        "anthropics/anthropic-sdk-python#1723",
+        "387169ce783c845075e10f49f60c80fe9ec032f3",
+        "anthropics/anthropic-sdk-python#1732",
+        "anthropics/anthropic-sdk-typescript#1107"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 0.3333333333333333,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.4777777777618519,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.0967741935483871,
+        "rouge_l_recall": 0.13636363636363635,
+        "rouge_l_f": 0.11320754716981131,
+        "bleu_1": 0.1935483870967742,
+        "bleu_2": 0.03333333333333333,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.7533009464695796
+      }
+    },
+    {
+      "id": "neg-008",
+      "query": "Write a full Kubernetes deployment manifest for my company's services.",
+      "negative": true,
+      "answer": "I don't have enough information to answer that question. I would need details about your company's services, such as container images, resource requirements, environment variables, and networking configurations, to create a Kubernetes deployment manifest.",
+      "error": null,
+      "source_doc_ids": [
+        "391d46f993043024470730303ae5f5e3fb516e16",
+        "anthropics/anthropic-sdk-python#1175",
+        "3fda1573bb074f9a510f8864a4dfe84499dc79a1",
+        "anthropics/anthropic-sdk-python#1683",
+        "anthropics/anthropic-sdk-python#505"
+      ],
+      "num_contexts": 6,
+      "refused": true,
+      "ragas": {
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "context_precision": 0.19999999998,
+        "context_recall": 0.0
+      },
+      "non_llm": {
+        "rouge_l_precision": 0.08823529411764706,
+        "rouge_l_recall": 0.10714285714285714,
+        "rouge_l_f": 0.0967741935483871,
+        "bleu_1": 0.11764705882352941,
+        "bleu_2": 0.0,
+        "bleu_3": 0.0,
+        "bleu_4": 0.0,
+        "semantic_similarity": 0.6534334091568846
+      }
+    }
+  ]
+}

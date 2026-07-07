@@ -1,0 +1,1 @@
+"""Retrieval: hybrid fusion (dense + BM25) + cross-encoder rerank."""

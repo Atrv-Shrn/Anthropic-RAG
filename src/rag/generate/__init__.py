@@ -1,0 +1,1 @@
+"""Generation: Ollama Cloud LLM (deepseek-v4-pro:cloud) + compact-only query engine."""

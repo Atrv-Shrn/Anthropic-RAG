@@ -1,0 +1,1 @@
+"""Evals: golden Q/A set + RAGAS (LLM + non-LLM) + native LlamaIndex evaluators."""

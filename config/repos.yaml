@@ -1,0 +1,12 @@
+# Curated set of top Anthropic repositories to ingest.
+# Scope: docs + issues/PRs/comments only — NOT source code (see docs/SPEC.md).
+# Edit this list freely; the pipeline reads it at ingest time.
+#
+# Scoped to the two SDK repos: each has the FULL docs + issues/PRs/comments coverage
+# the pipeline is designed for, so the corpus, evals, and hourly refresh all describe a
+# complete system. Add more repos here to widen ingestion (a GPU-backed embedder is
+# recommended for high-issue-volume repos like claude-code — ~7k issues/7d on CPU is slow).
+org: anthropics
+repos:
+  - anthropic-sdk-python
+  - anthropic-sdk-typescript

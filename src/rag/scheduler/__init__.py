@@ -1,0 +1,1 @@
+"""Scheduler: APScheduler hourly incremental ingest job (runs in-container)."""

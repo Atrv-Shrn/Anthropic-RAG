@@ -1,0 +1,1 @@
+"""Ingestion: splitters + prefixed nomic embeddings + IngestionPipeline (UPSERTS dedup)."""

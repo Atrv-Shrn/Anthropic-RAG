@@ -1,0 +1,1 @@
+"""Vector index: plain dense Qdrant store (no hybrid / no sparse model)."""

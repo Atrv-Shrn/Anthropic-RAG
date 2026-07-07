@@ -184,18 +184,6 @@ Example client config (Claude Desktop / Cline / any MCP client that supports HTT
 Omit `headers` if you did not set `MCP_AUTH_TOKEN`. From another machine on the LAN, replace
 `localhost` with the host's IP.
 
-## Hosting for many users
-
-Going from local to cloud is a **config change, not a code change**. Run the same compose
-stack on an AWS EC2 box, open the MCP port in the security group, set `MCP_AUTH_TOKEN`, and
-point clients at `http://<ec2-public-dns>:8000/mcp` with the bearer token. The pipeline code
-is untouched — only environment, networking, and auth differ.
-
-```mermaid
-flowchart LR
-    L["Local dev<br/>compose up (localhost/LAN)"] --> E["AWS EC2<br/>public IP + open port + bearer auth"]
-```
-
 ## CLI
 
 ```bash
@@ -238,21 +226,9 @@ Operational helpers in `scripts/` (run with `uv run --no-sync python scripts/<na
 uv run python -m pytest        # unit tests (pure logic; external services mocked)
 ```
 
-## A reusable pattern
+## Design principles
 
-The Anthropic GitHub org is simply the *source* this instance points at. The underlying
-skeleton is corpus-agnostic:
-
-```mermaid
-flowchart LR
-    Src["📥 Any source<br/>(the pluggable piece)"] --> Skel["Ingest → stay fresh →<br/>hybrid search → rerank →<br/>grounded answer → serve → measure"]
-    Skel --> Out["🤖 Cited answers<br/>over an MCP server"]
-```
-
-Repointing it at, say, an internal documentation set, a support-ticket history, or a
-different org's repos primarily means swapping two things: the **reader** (where the data
-comes from) and the **golden set** (what "good" means for that data). The rest are
-deliberate defaults that generalize:
+A few deliberate choices shaped how this was built:
 
 - **Embed locally, generate in the cloud** — optimize cost where volume is, quality where it's seen.
 - **Store both the meaning and the raw text** — to support vector and keyword retrieval.

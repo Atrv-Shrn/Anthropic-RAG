@@ -1,8 +1,12 @@
-"""FastMCP Streamable HTTP server exposing exactly two tools.
+"""FastMCP Streamable HTTP server exposing the RAG tools.
 
 - ``answer(query)`` -> runs the full retrieval + rerank + compact-generation pipeline
   and returns the grounded answer plus the source document IDs (parent doc_ids the
   ``get_documents`` tool can resolve).
+- ``answer_prs`` / ``answer_issues`` / ``answer_comments`` / ``answer_docs`` -> the same
+  pipeline scoped to a single content category.
+- ``list_documents(...)`` -> browse the raw Redis docstore (paginated, optional
+  category/repo filter) without needing IDs first.
 - ``get_documents(doc_ids)`` -> raw documents for those IDs straight from the Redis
   docstore (no retrieval, no generation).
 
@@ -20,38 +24,44 @@ from fastmcp import FastMCP
 
 from config.settings import Settings, get_settings
 from rag.ingest.pipeline import get_docstore
+from rag.retrieve.retriever import resolve_source_types
 
-# Module-level singletons — built once at server startup and reused across calls
-# (building the query engine loads the bge cross-encoder and connects to the stores).
-# A lock guards lazy init so concurrent first requests don't double-build the engine
-# (which would load the cross-encoder twice — a memory spike on a small host).
-_query_engine = None
+# Module-level singletons — built once and reused across calls (building a query engine
+# loads the bge cross-encoder and connects to the stores). Engines are cached per
+# category (each loads its own cross-encoder), keyed by category name ("all", "prs",
+# ...). A lock guards lazy init so concurrent first requests don't double-build an
+# engine (which would load the cross-encoder twice — a memory spike on a small host).
+_query_engines: dict[str, Any] = {}
 _docstore = None
 _engine_lock = threading.Lock()
 
 
-def _get_query_engine():
-    global _query_engine
-    if _query_engine is None:
+def _get_query_engine(category: str | None = None):
+    key = category or "all"
+    engine = _query_engines.get(key)
+    if engine is None:
         with _engine_lock:
-            if _query_engine is None:  # re-check inside the lock
+            engine = _query_engines.get(key)  # re-check inside the lock
+            if engine is None:
                 from rag.generate.query_engine import build_query_engine
 
-                _query_engine = build_query_engine()
-    return _query_engine
+                engine = build_query_engine(
+                    source_types=resolve_source_types(category)
+                )
+                _query_engines[key] = engine
+    return engine
 
 
 def invalidate_query_engine() -> None:
-    """Drop the cached query engine so the next request rebuilds it.
+    """Drop all cached query engines so the next request rebuilds them.
 
     The BM25 (lexical) retriever is built from a snapshot of the docstore at engine
-    build time; after the scheduler ingests new documents, the cached engine's BM25
-    arm is stale. Calling this after an ingest makes the next ``answer`` rebuild over
-    the fresh docstore so lexical retrieval sees newly-ingested content.
+    build time; after the scheduler ingests new documents, every cached engine's BM25
+    arm is stale. Clearing the cache after an ingest makes the next ``answer*`` rebuild
+    over the fresh docstore so lexical retrieval sees newly-ingested content.
     """
-    global _query_engine
     with _engine_lock:
-        _query_engine = None
+        _query_engines.clear()
 
 
 def _get_docstore(settings: Settings):
@@ -81,22 +91,96 @@ def build_server(settings: Settings | None = None) -> FastMCP:
         name="anthropic-rag",
         instructions=(
             "Grounded Q&A over the Anthropic GitHub organization (docs + "
-            "issues/PRs/comments). Use `answer` for grounded answers; use "
-            "`get_documents` to fetch raw source docs by the IDs `answer` returns."
+            "issues/PRs/comments). Use `answer` for grounded answers over everything, "
+            "or `answer_prs` / `answer_issues` / `answer_comments` / `answer_docs` to "
+            "scope a question to one content type. Use `list_documents` to browse the "
+            "raw source docs (paginated, optional category/repo filter) and "
+            "`get_documents` to fetch raw docs by ID (IDs come from `answer*` or "
+            "`list_documents`)."
         ),
     )
+
+    def _run_answer(query: str, category: str | None) -> dict[str, Any]:
+        qe = _get_query_engine(category)
+        response = qe.query(query)
+        return {
+            "answer": str(response),
+            "source_doc_ids": _source_doc_ids(response.source_nodes),
+        }
 
     @mcp.tool
     def answer(query: str) -> dict[str, Any]:
         """Answer a question about the Anthropic GitHub org, grounded in ingested docs.
 
-        Returns the answer text and the source document IDs it was grounded on.
+        Searches everything (docs, issues, PRs, comments). Returns the answer text and
+        the source document IDs it was grounded on.
         """
-        qe = _get_query_engine()
-        response = qe.query(query)
+        return _run_answer(query, None)
+
+    @mcp.tool
+    def answer_prs(query: str) -> dict[str, Any]:
+        """Answer a question grounded only in pull requests."""
+        return _run_answer(query, "prs")
+
+    @mcp.tool
+    def answer_issues(query: str) -> dict[str, Any]:
+        """Answer a question grounded only in issues."""
+        return _run_answer(query, "issues")
+
+    @mcp.tool
+    def answer_comments(query: str) -> dict[str, Any]:
+        """Answer a question grounded only in comments (issue + PR review comments)."""
+        return _run_answer(query, "comments")
+
+    @mcp.tool
+    def answer_docs(query: str) -> dict[str, Any]:
+        """Answer a question grounded only in documentation files (.md/.rst/.ipynb)."""
+        return _run_answer(query, "docs")
+
+    @mcp.tool
+    def list_documents(
+        category: str | None = None,
+        repo: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """Browse raw source documents in the Redis docstore (no retrieval, no LLM).
+
+        Filter by ``category`` (``prs``/``issues``/``comments``/``docs``, or ``None``
+        for all) and/or exact ``repo`` (full ``org/repo``, e.g.
+        ``anthropics/anthropic-sdk-python``). Paginate with ``limit``/``offset``. Returns
+        ``total`` (matching count), the ``limit``/``offset`` used, and a ``documents``
+        list of ``{doc_id, metadata, text_preview}`` (preview truncated to ~200 chars).
+        Pass a returned ``doc_id`` to ``get_documents`` for the full text.
+        """
+        wanted = resolve_source_types(category)
+        wanted_set = set(wanted) if wanted else None
+        ds = _get_docstore(s)
+
+        matched = []
+        for doc_id, node in ds.docs.items():
+            meta = node.metadata or {}
+            if wanted_set is not None and meta.get("source_type") not in wanted_set:
+                continue
+            if repo is not None and meta.get("repo") != repo:
+                continue
+            matched.append((doc_id, node, meta))
+
+        total = len(matched)
+        page = matched[offset : offset + limit] if limit >= 0 else matched[offset:]
+        documents = [
+            {
+                "doc_id": doc_id,
+                "metadata": dict(meta),
+                "text_preview": node.get_content()[:200],
+            }
+            for doc_id, node, meta in page
+        ]
         return {
-            "answer": str(response),
-            "source_doc_ids": _source_doc_ids(response.source_nodes),
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "documents": documents,
         }
 
     @mcp.tool

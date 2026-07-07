@@ -12,7 +12,7 @@ incremental ingestion, served over an MCP server.
 - **Retrieval**: hybrid — dense (Qdrant) + BM25 (Redis docstore), RRF fusion, `bge-reranker-base` rerank.
 - **Synthesis**: `compact` only.
 - **Stores**: Qdrant (vectors) · Redis (docstore + UPSERTS dedup) · SQLite (watermarks).
-- **Serving**: FastMCP over Streamable HTTP — two tools: `answer(query)`, `get_documents(doc_ids)`.
+- **Serving**: FastMCP over Streamable HTTP — `answer` (+ per-category `answer_prs/issues/comments/docs`), `list_documents` (browse raw docstore), `get_documents(doc_ids)`.
 - **Live wiring**: APScheduler hourly incremental ingest.
 
 ## Quickstart (local Docker)
@@ -42,9 +42,20 @@ the server is ready when you see `MCP server starting on 0.0.0.0:8000`.
 
 ## Connecting an AI agent to the MCP server
 
-The server speaks **MCP over Streamable HTTP** at `http://<host>:8000/mcp` and exposes
-two tools: `answer(query)` and `get_documents(doc_ids)`. If `MCP_AUTH_TOKEN` is set,
-send it as `Authorization: Bearer <token>`.
+The server speaks **MCP over Streamable HTTP** at `http://<host>:8000/mcp`. If
+`MCP_AUTH_TOKEN` is set, send it as `Authorization: Bearer <token>`.
+
+Tools:
+
+| Tool | What it does |
+|------|--------------|
+| `answer(query)` | Grounded answer over **everything** (docs + issues/PRs/comments). |
+| `answer_prs` / `answer_issues` / `answer_comments` / `answer_docs` | Same, scoped to one content type. |
+| `list_documents(category=None, repo=None, limit=50, offset=0)` | Browse the raw docstore — paginate, optional category/repo filter. Returns `doc_id`s. |
+| `get_documents(doc_ids)` | Fetch raw docs by ID (IDs come from `answer*` or `list_documents`). |
+
+A paste-able, agent-agnostic skill file describing when/how to use these lives at
+[`anthropic-rag-agent-skill.md`](anthropic-rag-agent-skill.md).
 
 Example client config (Claude Desktop / Cline / any MCP client that supports HTTP):
 
@@ -105,5 +116,5 @@ negative (refusal-rate) items are reported separately.
 ## Tests
 
 ```bash
-uv run python -m pytest        # 42 unit tests (pure logic; external services mocked)
+uv run python -m pytest        # unit tests (pure logic; external services mocked)
 ```

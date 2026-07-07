@@ -36,11 +36,16 @@ def build_query_engine(
     settings: Settings | None = None,
     template_name: str = "default_qa",
     rerank_top_n: int = 6,
+    source_types: tuple[str, ...] | None = None,
 ) -> RetrieverQueryEngine:
-    """Return a compact-mode ``RetrieverQueryEngine`` (hybrid retrieve -> rerank -> LLM)."""
+    """Return a compact-mode ``RetrieverQueryEngine`` (hybrid retrieve -> rerank -> LLM).
+
+    ``source_types`` scopes retrieval to a category (see ``resolve_source_types``);
+    ``None`` searches everything.
+    """
     s = settings or get_settings()
     return RetrieverQueryEngine.from_args(
-        retriever=build_retriever(s),
+        retriever=build_retriever(s, source_types=source_types),
         llm=get_llm(s),
         response_mode=ResponseMode.COMPACT,
         text_qa_template=load_qa_template(template_name),

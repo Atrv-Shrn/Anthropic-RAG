@@ -107,6 +107,32 @@ flowchart TB
 Neither replaces the other, and together they make re-running the pipeline idempotent: a run
 immediately after another produces **zero** new embeddings.
 
+## How good is it?
+
+The answer quality is measured, not assumed — and these are the honest numbers from a
+learning project, recorded under [`data/evals/`](data/evals/). The pipeline is graded two
+independent ways over a 21-item golden set (13 in-scope questions plus 8 deliberately
+out-of-scope), so a weakness hidden by one view shows up in the other: a **native
+LlamaIndex** pass/fail judge, and **RAGAS** continuous scores.
+
+| View | Metric | In-scope | Out-of-scope (should refuse) |
+|---|---|---|---|
+| Native (LLM-judge) | correctness | 0.46 | 1.00 |
+| Native (LLM-judge) | relevancy | 0.85 | 1.00 |
+| Native (LLM-judge) | faithfulness | 0.62 | 0.88 |
+| RAGAS | faithfulness | 0.75 | — |
+| RAGAS | answer_relevancy | 0.54 | — |
+| RAGAS | context_recall | 0.28 | — |
+| RAGAS | refusal_rate | — | 0.875 |
+
+The pattern is deliberate: the pipeline is strongest exactly where a RAG system most needs to
+be trustworthy — **knowing when to abstain**. It refuses roughly seven of eight out-of-scope
+questions and scores near-perfectly on the negative set, because a confident answer to an
+unanswerable question is the failure mode this project cares about most. In-scope answer
+quality is more middling (correctness ≈ 0.46 over a narrow, CPU-hosted corpus), and that
+recorded baseline is the point: it is what makes the next round of retrieval tuning
+measurable rather than guesswork.
+
 ## The stack
 
 | Layer | Tool | Why |

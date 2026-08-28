@@ -1,0 +1,20 @@
+# Keep the build context tiny: only pyproject/uv.lock, src/, config/, README.md
+# are COPYed by the Dockerfile. Everything else — especially the multi-GB host
+# .venv, .git, and the compose volume dirs — must never ship to the daemon.
+.venv/
+.git/
+.claude/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+qdrant_storage/
+ollama_data/
+redis_data/
+data/
+docs/
+tests/
+scripts/
+.env
+*.md
+!README.md

@@ -32,6 +32,17 @@ dependencies = [
 evals = ["ragas>=0.2", "nest-asyncio>=1.6"]
 dev = ["pytest>=8", "ruff>=0.8"]
 
+# The container runs the reranker on CPU only — pull torch from the CPU wheel index
+# on Linux so the image doesn't download the ~5 GB of nvidia-* CUDA wheels PyPI's
+# default torch build drags in. Windows/mac hosts keep the normal PyPI wheel.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu", marker = "sys_platform == 'linux'" }
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

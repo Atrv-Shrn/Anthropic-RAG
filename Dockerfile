@@ -18,9 +18,12 @@ RUN pip install --no-cache-dir uv
 WORKDIR /app
 
 # Install deps first (cache layer). Only the main dependency group is installed;
-# the evals/dev extras are intentionally excluded from the runtime image.
+# the evals/dev extras are intentionally excluded from the runtime image. The
+# cache mount persists downloaded wheels across rebuilds, and torch resolves to
+# the CPU wheel index on linux (see [tool.uv.sources] in pyproject.toml) — no
+# multi-GB nvidia CUDA wheels.
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-install-project
 
 # Pre-download the bge cross-encoder reranker into the image's HF cache so the first
 # answer() call after a container start doesn't pay a one-time HuggingFace download
@@ -35,13 +38,16 @@ RUN uv run --no-project python -c "from sentence_transformers import CrossEncode
 ENV HF_HUB_OFFLINE=1 \
     TRANSFORMERS_OFFLINE=1
 
-# Copy the package + config (secrets come from env at runtime, never baked in).
+# Copy the package + config (secrets come from env at runtime, never baked in),
+# then install the project itself so `uv run --no-sync` does zero work at startup.
 COPY src ./src
 COPY config ./config
 COPY README.md ./
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
 
 # Expose the MCP Streamable HTTP port.
 EXPOSE 8000
 
-# Default flow: seed once, then scheduler + MCP server (see rag/__main__.py).
-CMD ["uv", "run", "python", "-m", "rag"]
+# Default flow: serve immediately, seed in the background (see rag/__main__.py).
+# --no-sync: the env is fully built above; don't resolve/install at container start.
+CMD ["uv", "run", "--no-sync", "python", "-m", "rag"]
